@@ -770,15 +770,14 @@ function setSyncStatus(s) {
 // SHEETS SYNC
 // ──────────────────────────────────────────────────────
 async function syncToSheets(payload) {
-  if (!sheetsUrl) return; // Silent if no URL configured
+  if (!sheetsUrl) return;
   setSyncStatus('syncing');
   try {
-    await fetch(sheetsUrl, {
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
+    // Apps Script no acepta CORS en POST directo.
+    // Solución: enviar los datos como parámetro GET (URL encoded)
+    // El Apps Script los lee desde e.parameter.data
+    const url = sheetsUrl + '?data=' + encodeURIComponent(JSON.stringify(payload));
+    await fetch(url, { method:'GET', mode:'no-cors' });
     setSyncStatus('ok');
   } catch(e) {
     setSyncStatus('err');
