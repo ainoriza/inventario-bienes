@@ -363,7 +363,18 @@
     <div class="sync-indicator">
       <div class="sync-dot" id="syncDot"></div>
       <span id="syncLabel">Sin conectar</span>
+      <span id="lastUpdate" style="margin-left:.5rem;font-size:.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace"></span>
     </div>
+    <label style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--muted);cursor:pointer;margin-left:1rem;user-select:none">
+      <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh(this.checked)" style="accent-color:var(--accent);cursor:pointer">
+      Auto-actualizar
+      <select id="refreshInterval" onchange="changeRefreshInterval(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:.15rem .3rem;color:var(--text);font-size:.68rem;font-family:var(--font-sans,sans-serif)">
+        <option value="15">15 seg</option>
+        <option value="30" selected>30 seg</option>
+        <option value="60">1 min</option>
+        <option value="120">2 min</option>
+      </select>
+    </label>
   </div>
   <div style="display:flex;align-items:center;gap:.75rem">
     <div class="user-badge">
@@ -371,6 +382,7 @@
       <span id="userNameLabel">—</span>
     </div>
     <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="recargarDesdeSheets()" title="Recargar datos desde Google Sheets">↺ Sincronizar</button>
       <button class="btn btn-outline btn-sm" onclick="exportCSV()">↓ CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Nuevo</button>
       <button class="btn btn-outline btn-sm" onclick="logout()">Salir</button>
@@ -801,17 +813,89 @@ function logEntry(tipo, descripcion, nro) {
 // ──────────────────────────────────────────────────────
 // INIT APP
 // ──────────────────────────────────────────────────────
-function init() {
-  const saved = localStorage.getItem('bp_data_v4');
-  data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_DATA));
+async function init() {
+  // Mostrar spinner de carga
+  setSyncStatus('syncing');
+  document.getElementById('syncLabel').textContent = 'Cargando datos…';
+
+  // Intentar cargar desde Sheets (fuente de verdad compartida)
+  const sheetsData = await cargarDesdeSheets();
+
+  if (sheetsData && sheetsData.length > 0) {
+    // Sheets tiene datos → usarlos como fuente principal
+    data = sheetsData;
+    save(); // actualizar localStorage local
+    setSyncStatus('ok');
+  } else {
+    // Sin conexión o Sheets vacío → usar localStorage o datos iniciales
+    const saved = localStorage.getItem('bp_data_v4');
+    data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_DATA));
+    setSyncStatus(sheetsData === null ? 'err' : 'ok');
+  }
+
   data.forEach(b => { if (!b.log) b.log = []; });
-  save();
   renderStats();
   renderTable();
 }
 
+// Carga todos los bienes desde Google Sheets
+async function cargarDesdeSheets() {
+  if (!sheetsUrl) return null;
+  try {
+    const url = sheetsUrl + '?action=getAll';
+    const r = await fetch(url, { method: 'GET' });
+    const j = await r.json();
+    if (j.status !== 'ok' || !j.rows || j.rows.length < 2) return null;
+
+    // j.rows[0] = headers, j.rows[1..] = data
+    const headers = j.rows[0];
+    const COL = {};
+    headers.forEach((h, i) => { COL[h] = i; });
+
+    return j.rows.slice(1).map((row, idx) => ({
+      id: idx + 1,
+      nro:         String(row[COL['Nro. Inventario']] || ''),
+      elemento:    String(row[COL['Elemento']]        || ''),
+      marca:       String(row[COL['Marca']]           || ''),
+      modelo:      String(row[COL['Modelo']]          || ''),
+      serie:       String(row[COL['Serie']]           || ''),
+      area:        String(row[COL['Área']]            || 'VARIEDADES'),
+      responsable: String(row[COL['Responsable']]     || ''),
+      estado:      String(row[COL['Estado']]          || 'NO SE VERIFICA LA EXISTENCIA DEL BIEN'),
+      ubicacion:   String(row[COL['Ubicación']]       || ''),
+      pos:         String(row[COL['Posición en Plano']] || '') || null,
+      obs:         String(row[COL['Observaciones']]   || ''),
+      log: []
+    }));
+  } catch(e) {
+    return null;
+  }
+}
+
 function save() {
   localStorage.setItem('bp_data_v4', JSON.stringify(data));
+}
+
+async function recargarDesdeSheets() {
+  if (!sheetsUrl) { showToast('Sin URL de Sheets configurada', 'error'); return; }
+  setSyncStatus('syncing');
+  document.getElementById('syncLabel').textContent = 'Recargando…';
+  const sheetsData = await cargarDesdeSheets();
+  if (sheetsData && sheetsData.length > 0) {
+    data = sheetsData;
+    data.forEach(b => { if (!b.log) b.log = []; });
+    save();
+    selectedId = null;
+    document.getElementById('noSelection').style.display = 'flex';
+    document.getElementById('detailPanel').style.display = 'none';
+    renderStats();
+    renderTable();
+    setSyncStatus('ok');
+    showToast('✓ Datos actualizados desde Google Sheets', 'success');
+  } else {
+    setSyncStatus('err');
+    showToast('No se pudo cargar desde Sheets', 'error');
+  }
 }
 
 // ──────────────────────────────────────────────────────
@@ -1066,6 +1150,91 @@ function renderChangelog(b) {
 function tipoIcon(t) {
   return {pos:'📍',estado:'🔄',obs:'📝',nuevo:'✨',faltante:'⚠'}[t]||'•';
 }
+
+// ──────────────────────────────────────────────────────
+// AUTO-REFRESH / POLLING ENGINE
+// ──────────────────────────────────────────────────────
+let _pollTimer = null;
+let _pollInterval = 30; // segundos
+let _autoRefreshActive = false;
+let _isSyncing = false; // evita solapamiento de requests
+
+function toggleAutoRefresh(enabled) {
+  _autoRefreshActive = enabled;
+  if (enabled) {
+    startPolling();
+    showToast(`↺ Auto-actualización activada cada ${_pollInterval}s`, 'success');
+  } else {
+    stopPolling();
+    showToast('Auto-actualización desactivada', 'success');
+  }
+}
+
+function changeRefreshInterval(val) {
+  _pollInterval = parseInt(val);
+  if (_autoRefreshActive) {
+    stopPolling();
+    startPolling();
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  _pollTimer = setInterval(pollSheets, _pollInterval * 1000);
+}
+
+function stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+async function pollSheets() {
+  if (_isSyncing || !sheetsUrl || !currentUser) return;
+  _isSyncing = true;
+
+  const nuevosDatos = await cargarDesdeSheets();
+  if (nuevosDatos && nuevosDatos.length > 0) {
+    // Detectar si hay cambios reales antes de re-renderizar
+    const resumenAntes = data.map(b => b.nro + b.estado + (b.pos||'') + (b.obs||'')).join('|');
+    const resumenDespues = nuevosDatos.map(b => b.nro + b.estado + (b.pos||'') + (b.obs||'')).join('|');
+
+    if (resumenAntes !== resumenDespues) {
+      // Preservar el bien seleccionado si sigue existiendo
+      const selNro = selectedId ? data.find(x => x.id === selectedId)?.nro : null;
+      data = nuevosDatos;
+      data.forEach(b => { if (!b.log) b.log = []; });
+      save();
+
+      // Re-seleccionar el bien si estaba abierto
+      if (selNro) {
+        const nuevo = data.find(b => b.nro === selNro);
+        if (nuevo) { selectedId = nuevo.id; selectBien(nuevo.id); }
+      }
+
+      renderStats();
+      renderTable();
+      showToast('↺ Datos actualizados', 'success');
+    }
+
+    // Actualizar timestamp siempre
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss2 = String(now.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('lastUpdate');
+    if (el) el.textContent = `· ${hh}:${mm}:${ss2}`;
+    setSyncStatus('ok');
+  }
+  _isSyncing = false;
+}
+
+// Detener polling al cerrar sesión
+const _origLogout = logout;
+logout = function() {
+  stopPolling();
+  document.getElementById('autoRefreshToggle').checked = false;
+  _autoRefreshActive = false;
+  _origLogout();
+};
 
 // ──────────────────────────────────────────────────────
 // FLOOR PLAN — room-based SVG renderer
