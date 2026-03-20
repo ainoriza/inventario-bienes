@@ -125,6 +125,12 @@
   }
   .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
   .tab:hover:not(.active) { color:var(--text); border-color:var(--text); }
+  .tab-ok.active  { background:var(--ok); border-color:var(--ok); }
+  .tab-ok:hover:not(.active)  { color:var(--ok); border-color:var(--ok); }
+  .tab-warn.active  { background:var(--warn); border-color:var(--warn); }
+  .tab-warn:hover:not(.active)  { color:var(--warn); border-color:var(--warn); }
+  .tab-danger.active  { background:#e74c3c; border-color:#e74c3c; }
+  .tab-danger:hover:not(.active)  { color:#e74c3c; border-color:#e74c3c; }
 
   .filters { display:flex; gap:.6rem; margin-bottom:1.25rem; flex-wrap:wrap; }
   .search-wrap { position:relative; flex:1; min-width:200px; }
@@ -310,6 +316,22 @@
 
   /* config-bar removed — URL hardcoded */
 
+  /* Sortable table headers */
+  .th-sort {
+    cursor:pointer; user-select:none; transition:color .15s; white-space:nowrap;
+  }
+  .th-sort:hover { color:var(--text); }
+  .sort-icon { font-size:.6rem; opacity:.5; margin-left:2px; }
+
+  /* Quick constatar button */
+  .btn-constatar {
+    background:rgba(46,204,113,.15); border:1px solid rgba(46,204,113,.35);
+    color:var(--ok); border-radius:5px; padding:.2rem .55rem;
+    font-size:.75rem; font-weight:700; cursor:pointer;
+    transition:all .15s; font-family:var(--font-sans,sans-serif);
+  }
+  .btn-constatar:hover { background:rgba(46,204,113,.3); transform:scale(1.05); }
+
   /* ── TOAST ── */
   .toast {
     position:fixed; bottom:1.5rem; right:1.5rem; z-index:300;
@@ -385,6 +407,7 @@
       <button class="btn btn-outline btn-sm" onclick="recargarDesdeSheets()" title="Recargar datos desde Google Sheets">↺ Sincronizar</button>
       <button class="btn btn-outline btn-sm" onclick="exportCSV()">↓ CSV</button>
       <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Nuevo</button>
+      <button class="btn btn-outline btn-sm" onclick="openSedesModal()">✏ Sedes</button>
       <button class="btn btn-outline btn-sm" onclick="logout()">Salir</button>
     </div>
   </div>
@@ -403,10 +426,11 @@
 
     <div class="tabs">
       <button class="tab active" onclick="switchTab('todos',this)">Todos</button>
-      <button class="tab" onclick="switchTab('belgrano',this)">Belgrano 450</button>
-      <button class="tab" onclick="switchTab('castelar',this)">Castelar</button>
-      <button class="tab" onclick="switchTab('no_verifica',this)">No verificados</button>
-      <button class="tab" onclick="switchTab('faltante',this)">Faltantes</button>
+      <button class="tab" id="tabBelgrano" onclick="switchTab('belgrano',this)">Ministerio</button>
+      <button class="tab" id="tabCastelar" onclick="switchTab('castelar',this)">Castelar</button>
+      <button class="tab tab-ok" onclick="switchTab('constatado',this)">✓ Constatados</button>
+      <button class="tab tab-warn" onclick="switchTab('no_verifica',this)">✗ No verificados</button>
+      <button class="tab tab-danger" onclick="switchTab('faltante',this)">⚠ Faltantes</button>
     </div>
 
     <div class="filters">
@@ -416,7 +440,7 @@
       </div>
       <select id="filterUb" onchange="renderTable()">
         <option value="">Todas las sedes</option>
-        <option value="BELGRANO">Av. Belgrano 450</option>
+        <option value="BELGRANO">Ministerio</option>
         <option value="CASTELAR">Castelar</option>
         <option value="SIN">Sin ubicación</option>
       </select>
@@ -426,8 +450,13 @@
       <table>
         <thead>
           <tr>
-            <th>#</th><th>Nro. Inventario</th><th>Elemento</th>
-            <th>Marca/Modelo</th><th>Estado</th><th>Sede</th><th>Posición</th>
+            <th>#</th>
+            <th class="th-sort" onclick="sortTable('nro')" id="thNro">Nro. Inventario <span class="sort-icon">↕</span></th>
+            <th class="th-sort" onclick="sortTable('elemento')" id="thElemento">Elemento <span class="sort-icon">↕</span></th>
+            <th class="th-sort" onclick="sortTable('marca')" id="thMarca">Marca/Modelo <span class="sort-icon">↕</span></th>
+            <th class="th-sort" onclick="sortTable('estado')" id="thEstado">Estado <span class="sort-icon">↕</span></th>
+            <th class="th-sort" onclick="sortTable('ubicacion')" id="thSede">Sede <span class="sort-icon">↕</span></th>
+            <th>Posición</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -494,7 +523,7 @@
       <div class="floor-section">
         <h4>📍 Posición en plano</h4>
         <div class="floor-tabs">
-          <button class="floor-tab fb" id="ftB" onclick="setFloor('belgrano')">Belgrano 450</button>
+          <button class="floor-tab fb" id="ftB" onclick="setFloor('belgrano')" data-sede="belgrano">Ministerio</button>
           <button class="floor-tab" id="ftC" onclick="setFloor('castelar')">Castelar</button>
         </div>
         <div class="floor-legend">
@@ -544,7 +573,7 @@
       <div class="row2">
         <select id="nUb">
           <option value="">Sede</option>
-          <option value="AV BELGRANO 450">Av. Belgrano 450</option>
+          <option value="AV BELGRANO 450">Ministerio</option>
           <option value="CASTELAR">Castelar</option>
         </select>
         <select id="nEst">
@@ -562,6 +591,32 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL SEDES -->
+<div class="modal-overlay" id="sedesModal">
+  <div class="modal" style="max-width:420px">
+    <h3>📍 Editar nombres de sedes</h3>
+    <p>Cambios quedan registrados en el historial con usuario y fecha.</p>
+    <div style="display:flex;flex-direction:column;gap:.85rem">
+      <div>
+        <label style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:.3rem">Sede Belgrano</label>
+        <input type="text" id="inputSedeB" placeholder="Ej: Ministerio" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.55rem .85rem;color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem">
+      </div>
+      <div>
+        <label style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:.3rem">Sede Castelar</label>
+        <input type="text" id="inputSedeC" placeholder="Ej: Castelar" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.55rem .85rem;color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem">
+      </div>
+      <div>
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem">Historial de cambios de nombre</div>
+        <div id="sedesLogList" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:.3rem"></div>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button class="btn btn-outline" onclick="closeSedesModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarSedes()">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════
      SCRIPT
@@ -584,17 +639,17 @@ let sheetsUrl = 'https://script.google.com/macros/s/AKfycby8A2xe95TzqAXfnbHx-o1K
 // pos key: "roomId:RC"  e.g. "despacho2:B3"
 // ──────────────────────────────────────────────────────
 
-// Belgrano 450: Despacho4 (top-right) + Pasillo + Despacho2/Despacho/Despacho3 (bottom row)
+// Ministerio: Oficina 217 (top-right) + Pasillo + Oficina 212/213/216 (bottom row)
 // Castelar: single Despacho
 
 const FLOOR_DEFS = {
   belgrano: {
-    label: 'Av. Belgrano 450',
+    label: 'Ministerio',
     rooms: [
-      { id:'despacho4', name:'Despacho 4', cols:6, rows:4 },
-      { id:'despacho2', name:'Despacho 2', cols:6, rows:4 },
-      { id:'despacho',  name:'Despacho',   cols:5, rows:4 },
-      { id:'despacho3', name:'Despacho 3', cols:5, rows:4 },
+      { id:'despacho4', name:'Oficina 217', cols:6, rows:4 },
+      { id:'despacho2', name:'Oficina 212', cols:6, rows:4 },
+      { id:'despacho',  name:'Oficina 213', cols:5, rows:4 },
+      { id:'despacho3', name:'Oficina 216', cols:5, rows:4 },
     ]
   },
   castelar: {
@@ -605,10 +660,34 @@ const FLOOR_DEFS = {
   }
 };
 
-// Legacy label lookup
+// ── Nombres de sedes editables ──────────────────────────
+function getSedeLabel(key) {
+  const saved = localStorage.getItem('bp_sede_' + key);
+  return saved || (key === 'belgrano' ? 'Ministerio' : 'Castelar');
+}
+function setSedeLabel(key, label) {
+  localStorage.setItem('bp_sede_' + key, label);
+  // Actualizar FLOOR_DEFS en memoria
+  FLOOR_DEFS[key].label = label;
+  // Actualizar todos los elementos UI que muestran el nombre
+  const map = {
+    belgrano: ['tabBelgrano','ftB','statBelgrano'],
+    castelar:  ['tabCastelar','ftC','statCastelar']
+  };
+  (map[key]||[]).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+}
+// Aplicar nombres guardados al arrancar
+(function() {
+  FLOOR_DEFS.belgrano.label = getSedeLabel('belgrano');
+  FLOOR_DEFS.castelar.label  = getSedeLabel('castelar');
+})();
+
 const FLOORS = {
-  belgrano: { label:'Av. Belgrano 450' },
-  castelar: { label:'Castelar' }
+  belgrano: { get label() { return getSedeLabel('belgrano'); } },
+  castelar:  { get label() { return getSedeLabel('castelar');  } }
 };
 
 // ──────────────────────────────────────────────────────
@@ -715,6 +794,15 @@ const INITIAL_DATA = [
 // LOGIN
 // ──────────────────────────────────────────────────────
 function initLogin() {
+  // Apply saved sede labels to static elements
+  ['tabBelgrano','ftB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = getSedeLabel('belgrano');
+  });
+  ['tabCastelar','ftC'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = getSedeLabel('castelar');
+  });
   const saved = localStorage.getItem('bp_users') || '[]';
   const users = JSON.parse(saved);
   const container = document.getElementById('recentUsers');
@@ -907,12 +995,14 @@ function renderStats() {
   const cast = data.filter(b => b.ubicacion && b.ubicacion.toUpperCase().includes('CASTELAR')).length;
   const noV = data.filter(b => b.estado.includes('NO SE VERIFICA')).length;
   const falt = data.filter(b => b.estado === 'FALTANTE').length;
+  const const_ = data.filter(b => b.estado==='CONSTATADO').length;
   document.getElementById('statsBar').innerHTML = `
     <div class="stat-card c1"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
-    <div class="stat-card c1"><div class="stat-num">${belg}</div><div class="stat-label">Belgrano 450</div></div>
-    <div class="stat-card c4"><div class="stat-num">${cast}</div><div class="stat-label">Castelar</div></div>
+    <div class="stat-card c2"><div class="stat-num">${const_}</div><div class="stat-label">Constatados</div></div>
     <div class="stat-card c3"><div class="stat-num">${noV}</div><div class="stat-label">No verif.</div></div>
     <div class="stat-card c3"><div class="stat-num">${falt}</div><div class="stat-label">Faltantes</div></div>
+    <div class="stat-card c1"><div class="stat-num">${belg}</div><div class="stat-label" id="statBelgrano">Belgrano</div></div>
+    <div class="stat-card c4"><div class="stat-num">${cast}</div><div class="stat-label" id="statCastelar">Castelar</div></div>
   `;
 }
 
@@ -932,6 +1022,7 @@ function getFiltered() {
   return data.filter(b => {
     if (currentTab==='belgrano' && !b.ubicacion.includes('BELGRANO')) return false;
     if (currentTab==='castelar' && !b.ubicacion.toUpperCase().includes('CASTELAR')) return false;
+    if (currentTab==='constatado' && b.estado!=='CONSTATADO') return false;
     if (currentTab==='no_verifica' && !b.estado.includes('NO SE VERIFICA')) return false;
     if (currentTab==='faltante' && b.estado!=='FALTANTE') return false;
     if (q) { const h=`${b.elemento} ${b.marca} ${b.modelo} ${b.nro} ${b.serie}`.toLowerCase(); if(!h.includes(q)) return false; }
@@ -942,26 +1033,79 @@ function getFiltered() {
   });
 }
 
+let sortCol = 'elemento';
+let sortAsc = true;
+
+function sortTable(col) {
+  if (sortCol === col) { sortAsc = !sortAsc; }
+  else { sortCol = col; sortAsc = true; }
+  // Update header icons
+  ['nro','elemento','marca','estado','ubicacion'].forEach(c => {
+    const el = document.getElementById('th' + c.charAt(0).toUpperCase() + c.slice(1));
+    if (!el) return;
+    const icon = el.querySelector('.sort-icon');
+    if (!icon) return;
+    icon.textContent = (c === sortCol) ? (sortAsc ? '↑' : '↓') : '↕';
+    el.style.color = (c === sortCol) ? 'var(--accent)' : '';
+  });
+  renderTable();
+}
+
+function constatarRapido(e, id) {
+  e.stopPropagation(); // no abrir el detalle
+  const b = data.find(x => x.id === id);
+  if (!b || b.estado === 'CONSTATADO') return;
+  const anterior = b.estado;
+  b.estado = 'CONSTATADO';
+  const entry = logEntry('estado', anterior + ' → CONSTATADO', b.nro);
+  b.log.unshift(entry);
+  save();
+  renderStats();
+  renderTable();
+  if (selectedId === id) selectBien(id);
+  syncToSheets({ action:'update', bien:{nro:b.nro,elemento:b.elemento,estado:'CONSTATADO',ubicacion:b.ubicacion,pos:b.pos||'',obs:b.obs||''}, log:entry });
+  showToast('✓ ' + b.elemento + ' — Constatado', 'success');
+}
+
 function renderTable() {
-  const filtered = getFiltered();
+  let filtered = getFiltered();
   const tbody = document.getElementById('tableBody');
   const empty = document.getElementById('emptyState');
   if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
+
+  // Sort
+  filtered = [...filtered].sort((a, b) => {
+    let va = (a[sortCol]||'').toString().toLowerCase();
+    let vb = (b[sortCol]||'').toString().toLowerCase();
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
   tbody.innerHTML = filtered.map((b,i) => {
-    const ubBadge = b.ubicacion.includes('BELGRANO') ? `<span class="badge badge-belgrano">Belgrano</span>` :
-                    b.ubicacion.toUpperCase().includes('CASTELAR') ? `<span class="badge badge-castelar">Castelar</span>` :
-                    `<span class="badge badge-noub">—</span>`;
-    const estBadge = b.estado==='CONSTATADO' ? `<span class="badge badge-ok">OK</span>` :
-                     b.estado==='FALTANTE' ? `<span class="badge badge-faltante">⚠ Faltante</span>` :
-                     `<span class="badge badge-warn">✗</span>`;
-    const posBadge = b.pos ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent2)">${posLabel(b.pos)}</span>` : `<span style="color:var(--muted);font-size:.7rem">—</span>`;
+    const ubBadge = b.ubicacion.includes('BELGRANO') ?
+      `<span class="badge badge-belgrano">${getSedeLabel('belgrano')}</span>` :
+      b.ubicacion.toUpperCase().includes('CASTELAR') ?
+      `<span class="badge badge-castelar">${getSedeLabel('castelar')}</span>` :
+      `<span class="badge badge-noub">—</span>`;
+    const estBadge = b.estado==='CONSTATADO' ?
+      `<span class="badge badge-ok">✓ Constatado</span>` :
+      b.estado==='FALTANTE' ?
+      `<span class="badge badge-faltante">⚠ Faltante</span>` :
+      `<span class="badge badge-warn">✗ No verif.</span>`;
+    const posBadge = b.pos ?
+      `<span style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent2)">${posLabel(b.pos)}</span>` :
+      `<span style="color:var(--muted);font-size:.7rem">—</span>`;
+
     return `<tr onclick="selectBien(${b.id})" class="${selectedId===b.id?'selected':''}">
       <td style="color:var(--muted);font-size:.72rem">${i+1}</td>
       <td><span class="nro-inv">${b.nro}</span></td>
-      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.elemento}</td>
-      <td style="color:var(--muted);font-size:.75rem">${[b.marca,b.modelo].filter(Boolean).join(' / ')||'—'}</td>
-      <td>${estBadge}</td><td>${ubBadge}</td><td>${posBadge}</td>
+      <td style="font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.elemento}</td>
+      <td style="color:var(--muted);font-size:.75rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${[b.marca,b.modelo].filter(Boolean).join(' / ')||'—'}</td>
+      <td>${estBadge}</td>
+      <td>${ubBadge}</td>
+      <td>${posBadge}</td>
     </tr>`;
   }).join('');
 }
@@ -1002,7 +1146,7 @@ function selectBien(id) {
   document.getElementById('dSerie').textContent = b.serie||'—';
   document.getElementById('dArea').textContent = b.area;
   document.getElementById('dResp').textContent = b.responsable;
-  const ubTxt = b.ubicacion.includes('BELGRANO')?'Av. Belgrano 450':b.ubicacion.toUpperCase().includes('CASTELAR')?'Castelar':'Sin asignar';
+  const ubTxt = b.ubicacion.includes('BELGRANO')?getSedeLabel('belgrano'):b.ubicacion.toUpperCase().includes('CASTELAR')?'Castelar':'Sin asignar';
   document.getElementById('dUb').innerHTML = b.ubicacion.includes('BELGRANO') ?
     `<span class="badge badge-belgrano">${ubTxt}</span>` : b.ubicacion.toUpperCase().includes('CASTELAR') ?
     `<span class="badge badge-castelar">${ubTxt}</span>` : `<span class="badge badge-noub">${ubTxt}</span>`;
@@ -1584,6 +1728,72 @@ renderFloor = function() {
   // On first render reset zoom nicely
   if (_scale === 1 && _tx === 0) { _tx = 8; _ty = 8; _applyTransform(); }
 };
+
+// ──────────────────────────────────────────────────────
+// SEDES — nombres editables con historial
+// ──────────────────────────────────────────────────────
+const SEDE_LOG_KEY = 'bp_sedes_log';
+
+function openSedesModal() {
+  document.getElementById('inputSedeB').value = getSedeLabel('belgrano');
+  document.getElementById('inputSedeC').value = getSedeLabel('castelar');
+  renderSedesLog();
+  document.getElementById('sedesModal').classList.add('open');
+}
+
+function closeSedesModal() {
+  document.getElementById('sedesModal').classList.remove('open');
+}
+
+function guardarSedes() {
+  const newB = document.getElementById('inputSedeB').value.trim();
+  const newC = document.getElementById('inputSedeC').value.trim();
+  if (!newB || !newC) { showToast('El nombre no puede estar vacío', 'error'); return; }
+
+  const log = JSON.parse(localStorage.getItem(SEDE_LOG_KEY) || '[]');
+  let hubo = false;
+
+  if (newB !== getSedeLabel('belgrano')) {
+    log.unshift({ ts: new Date().toLocaleString('es-AR'), usuario: currentUser, sede: 'Belgrano', antes: getSedeLabel('belgrano'), despues: newB });
+    setSedeLabel('belgrano', newB);
+    hubo = true;
+  }
+  if (newC !== getSedeLabel('castelar')) {
+    log.unshift({ ts: new Date().toLocaleString('es-AR'), usuario: currentUser, sede: 'Castelar', antes: getSedeLabel('castelar'), despues: newC });
+    setSedeLabel('castelar', newC);
+    hubo = true;
+  }
+
+  if (hubo) {
+    localStorage.setItem(SEDE_LOG_KEY, JSON.stringify(log.slice(0, 50)));
+    // Sincronizar con Sheets el cambio de nombre
+    syncToSheets({ action:'log', log:{ timestamp: new Date().toLocaleString('es-AR'), usuario: currentUser, tipo:'obs', nro_inventario:'—', descripcion: 'Renombrado de sedes: Belgrano="'+newB+'" / Castelar="'+newC+'"' }});
+    renderStats();
+    renderTable();
+    showToast('✓ Nombres actualizados', 'success');
+  }
+  closeSedesModal();
+}
+
+function renderSedesLog() {
+  const log = JSON.parse(localStorage.getItem(SEDE_LOG_KEY) || '[]');
+  const el = document.getElementById('sedesLogList');
+  if (!log.length) {
+    el.innerHTML = '<div style="font-size:.72rem;color:var(--muted)">Sin cambios registrados.</div>';
+    return;
+  }
+  el.innerHTML = log.map(e => `
+    <div style="background:var(--surface2);border-radius:5px;padding:.4rem .65rem;border-left:2px solid var(--accent)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:.72rem;font-weight:600">👤 ${e.usuario}</span>
+        <span style="font-size:.62rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${e.ts}</span>
+      </div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:.15rem">
+        ${e.sede}: <span style="color:var(--warn)">"${e.antes}"</span> → <span style="color:var(--ok)">"${e.despues}"</span>
+      </div>
+    </div>
+  `).join('');
+}
 
 // ──────────────────────────────────────────────────────
 // START
