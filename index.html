@@ -237,9 +237,26 @@
 
   .floor-grid-wrap {
     background:var(--bg); border:1px solid var(--border); border-radius:8px;
-    padding:.75rem; overflow:auto;
+    overflow:hidden; position:relative; height:260px; cursor:grab; user-select:none;
   }
-  #floorPlan { display:block; overflow-x:auto; }
+  .floor-grid-wrap.panning { cursor:grabbing; }
+  #floorPlan {
+    display:block; position:absolute; top:0; left:0;
+    transform-origin:0 0; will-change:transform;
+  }
+  .zoom-controls {
+    position:absolute; bottom:8px; right:8px; z-index:10;
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .zoom-btn {
+    width:26px; height:26px; border-radius:5px;
+    background:var(--surface2); border:1px solid var(--border);
+    color:var(--text); font-size:1rem; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background .15s; font-family:monospace;
+  }
+  .zoom-btn:hover { background:var(--surface); border-color:var(--accent); color:var(--accent); }
+  .zoom-hint { font-size:.62rem; color:var(--muted); margin-bottom:.3rem; text-align:right; }
 
   .cell {
     width:34px; height:34px; border-radius:4px; border:1px solid rgba(42,47,62,.8);
@@ -291,18 +308,7 @@
   .modal-body .row2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
   .modal-actions { display:flex; gap:.6rem; justify-content:flex-end; margin-top:1.25rem; }
 
-  /* ── SHEETS CONFIG PANEL ── */
-  .config-bar {
-    padding:.75rem 1.5rem; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; background:var(--surface2);
-  }
-  .config-bar label { font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
-  .config-bar input {
-    flex:1; min-width:200px; background:var(--bg); border:1px solid var(--border);
-    border-radius:6px; padding:.4rem .75rem; color:var(--text);
-    font-family:'JetBrains Mono',monospace; font-size:.72rem;
-  }
-  .config-bar input:focus { outline:none; border-color:var(--accent); }
+  /* config-bar removed — URL hardcoded */
 
   /* ── TOAST ── */
   .toast {
@@ -372,12 +378,7 @@
   </div>
 </header>
 
-<!-- Sheets URL config bar -->
-<div class="config-bar" id="configBar">
-  <label>Apps Script URL:</label>
-  <input type="text" id="sheetsUrl" placeholder="Pegá aquí la URL de tu Web App de Google Apps Script…" oninput="saveSheetsUrl()">
-  <button class="btn btn-outline btn-sm" onclick="testConnection()">Probar conexión</button>
-</div>
+<!-- Sheets URL hardcoded —no config bar needed -->
 
 <!-- ════════════════════════════════════════════════
      MAIN
@@ -490,8 +491,14 @@
           <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Seleccionado</div>
           <div class="legend-item"><div class="legend-dot" style="background:rgba(0,212,170,.15);border:1px solid var(--accent2)"></div>Puerta</div>
         </div>
-        <div class="floor-grid-wrap">
+        <div class="zoom-hint">Scroll o pellizco para hacer zoom · arrastrar para mover</div>
+        <div class="floor-grid-wrap" id="floorWrap">
           <div id="floorPlan"></div>
+          <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomFloor(1.25)" title="Acercar">+</button>
+            <button class="zoom-btn" onclick="zoomFloor(0.8)"  title="Alejar">−</button>
+            <button class="zoom-btn" onclick="resetZoom()"     title="Restablecer" style="font-size:.6rem">⊡</button>
+          </div>
         </div>
         <div id="selectedPos" style="color:var(--muted)"></div>
       </div>
@@ -558,7 +565,7 @@ let currentFloor = 'belgrano';
 let currentTab = 'todos';
 let data = [];
 let nextId = 200;
-let sheetsUrl = '';
+let sheetsUrl = 'https://script.google.com/macros/s/AKfycby8A2xe95TzqAXfnbHx-o1KHg-oP_tHKdwPI0VfLCu2u8O2b3jWkyG2RwXEK6Ujrg07/exec';
 
 // ──────────────────────────────────────────────────────
 // FLOOR LAYOUTS — room-based
@@ -596,100 +603,100 @@ const FLOORS = {
 // INITIAL DATA (94 bienes del Excel)
 // ──────────────────────────────────────────────────────
 const INITIAL_DATA = [
-  {id:1,nro:"3570009681",elemento:"Mesa ratona",marca:"",modelo:"c/vidrio",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
-  {id:2,nro:"3570183771",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
-  {id:3,nro:"3570183772",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
-  {id:4,nro:"3570183940",elemento:"Sillón giratorio",marca:"",modelo:"con ruedas",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:1,nro:"3570009681",elemento:"Mesa ratona",marca:"",modelo:"c/vidrio",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:2,nro:"3570183771",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:3,nro:"3570183772",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:4,nro:"3570183940",elemento:"Sillón giratorio",marca:"",modelo:"con ruedas",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
   {id:5,nro:"3570184140",elemento:"Cafetera",marca:"Yelmo",modelo:"16001",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:6,nro:"6140000203",elemento:"Impresora",marca:"HP",modelo:"Laser Jet 1018",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:7,nro:"6140000264",elemento:"CPU",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:6,nro:"6140000203",elemento:"Impresora",marca:"HP",modelo:"Laser Jet 1018",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:7,nro:"6140000264",elemento:"CPU",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:8,nro:"6140000491",elemento:"CPU",marca:"CDR",modelo:"Enterprise Argentina (PC-002)",serie:"29jjmac626",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:9,nro:"6140000543",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:10,nro:"6140000544",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:11,nro:"6140000545",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:12,nro:"6140000546",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:13,nro:"6140000547",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:9,nro:"6140000543",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:10,nro:"6140000544",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:11,nro:"6140000545",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:12,nro:"6140000546",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:13,nro:"6140000547",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
   {id:14,nro:"6140000618",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:15,nro:"6140000621",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:16,nro:"6140000628",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:17,nro:"6140000692",elemento:"Fax",marca:"Panasonic",modelo:"KX FP 218 AG",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:18,nro:"6140000770",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800155",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:19,nro:"6140000775",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800149",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:20,nro:"6140001049",elemento:"PC",marca:"Biswal",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:21,nro:"6140001174",elemento:"CPU",marca:"Omnidata",modelo:"2010",serie:"a3577",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:17,nro:"6140000692",elemento:"Fax",marca:"Panasonic",modelo:"KX FP 218 AG",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:18,nro:"6140000770",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800155",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:19,nro:"6140000775",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800149",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:20,nro:"6140001049",elemento:"PC",marca:"Biswal",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:21,nro:"6140001174",elemento:"CPU",marca:"Omnidata",modelo:"2010",serie:"a3577",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
   {id:22,nro:"6140001193",elemento:"Monitor",marca:"Samsung",modelo:"Syncmaster 933",serie:"cm19h9fsa30893",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:23,nro:"6140001489",elemento:"GPS",marca:"Garmin",modelo:"Nuvi 205",serie:"1sb314608",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:24,nro:"6140001515",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2017",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:25,nro:"6140001517",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2019",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:26,nro:"6140001526",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2028",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:27,nro:"6140001544",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:28,nro:"6140001545",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2031",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:23,nro:"6140001489",elemento:"GPS",marca:"Garmin",modelo:"Nuvi 205",serie:"1sb314608",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:24,nro:"6140001515",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2017",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:25,nro:"6140001517",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2019",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:26,nro:"6140001526",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2028",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:27,nro:"6140001544",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:28,nro:"6140001545",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2031",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:29,nro:"6140001546",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2032",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:30,nro:"6140001592",elemento:"Switch",marca:"3Com",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:30,nro:"6140001592",elemento:"Switch",marca:"3Com",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:31,nro:"6140002192",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:32,nro:"6140002230",elemento:"Switch",marca:"Encore",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:33,nro:"6140002298",elemento:"Switch",marca:"Noganet",modelo:"",serie:"10a0900644d02888",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:34,nro:"6140002317",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:35,nro:"6140002594",elemento:"Microondas",marca:"Hitplus",modelo:"CN-201M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:36,nro:"6140002669",elemento:"Carrito",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:37,nro:"6140002923",elemento:"Impresora",marca:"KYOCERA",modelo:"FS-1035MFP",serie:"NW32Y01742",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:38,nro:"6140002934",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC414030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:39,nro:"6140002938",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC408323",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:40,nro:"6140002966",elemento:"PC + Monitor",marca:"CX",modelo:"SPL",serie:"400404405",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:33,nro:"6140002298",elemento:"Switch",marca:"Noganet",modelo:"",serie:"10a0900644d02888",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:34,nro:"6140002317",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:35,nro:"6140002594",elemento:"Microondas",marca:"Hitplus",modelo:"CN-201M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:36,nro:"6140002669",elemento:"Carrito",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:37,nro:"6140002923",elemento:"Impresora",marca:"KYOCERA",modelo:"FS-1035MFP",serie:"NW32Y01742",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:38,nro:"6140002934",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC414030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:39,nro:"6140002938",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC408323",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:40,nro:"6140002966",elemento:"PC + Monitor",marca:"CX",modelo:"SPL",serie:"400404405",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:41,nro:"6140002988",elemento:"PC + Monitor",marca:"CX",modelo:"SPL",serie:"400404414",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:42,nro:"6140003017",elemento:"Switch",marca:"TP Link",modelo:"TL-SF 1008D",serie:"13463806070",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:42,nro:"6140003017",elemento:"Switch",marca:"TP Link",modelo:"TL-SF 1008D",serie:"13463806070",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:43,nro:"6140003076",elemento:"Procesador",marca:"AMD APU",modelo:"A4 3300",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:44,nro:"6140003077",elemento:"Procesador",marca:"AMD APU",modelo:"A4 3300",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:45,nro:"6140003079",elemento:"Motherboard",marca:"AsRock",modelo:"A55-VS M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:46,nro:"6140003080",elemento:"Motherboard",marca:"AsRock",modelo:"A55-VS M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:47,nro:"6140003082",elemento:"Pulverizador eléctrico",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:47,nro:"6140003082",elemento:"Pulverizador eléctrico",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:48,nro:"6140003085",elemento:"Módulo de memoria",marca:"Kingston",modelo:"2GB DDR3 1333Mhz",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:49,nro:"6140003086",elemento:"Módulo de memoria",marca:"Kingston",modelo:"2GB DDR3 1333Mhz",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:50,nro:"6140003382",elemento:"Impresora multifunción laser",marca:"Samsung",modelo:"SL-C460W",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:51,nro:"6140003444",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KX-TG1311AGB",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:52,nro:"6140003566",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:53,nro:"6140003567",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:54,nro:"6140003568",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:55,nro:"6140003569",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:56,nro:"6140003570",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:57,nro:"6140003571",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:58,nro:"6140003795",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:59,nro:"6140003796",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:60,nro:"6140003805",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:61,nro:"6140003806",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:62,nro:"6140003807",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:63,nro:"6140003808",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:64,nro:"6140003995",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"7RLC793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:65,nro:"6140004002",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"GXK4793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:66,nro:"6140004016",elemento:"Teléfono celular",marca:"Samsung",modelo:"Galaxy A52S",serie:"R5CR90NHRZF",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:67,nro:"6140004107",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 ME",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:68,nro:"6140004110",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 MD",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:69,nro:"6140004163",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:50,nro:"6140003382",elemento:"Impresora multifunción laser",marca:"Samsung",modelo:"SL-C460W",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:51,nro:"6140003444",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KX-TG1311AGB",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:52,nro:"6140003566",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:53,nro:"6140003567",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:54,nro:"6140003568",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:55,nro:"6140003569",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:56,nro:"6140003570",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:57,nro:"6140003571",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:58,nro:"6140003795",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:59,nro:"6140003796",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:60,nro:"6140003805",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:61,nro:"6140003806",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:62,nro:"6140003807",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:63,nro:"6140003808",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:64,nro:"6140003995",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"7RLC793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:65,nro:"6140004002",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"GXK4793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:66,nro:"6140004016",elemento:"Teléfono celular",marca:"Samsung",modelo:"Galaxy A52S",serie:"R5CR90NHRZF",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:67,nro:"6140004107",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 ME",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:68,nro:"6140004110",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 MD",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:69,nro:"6140004163",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:70,nro:"6140004171",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:71,nro:"6140004305",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"3Y3ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:72,nro:"6140004306",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"2L2ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:73,nro:"6140004307",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"9M4ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:74,nro:"6140004388",elemento:"Impresora multifunción",marca:"HP",modelo:"M428",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:75,nro:"6140004393",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:76,nro:"6140004394",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:71,nro:"6140004305",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"3Y3ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:72,nro:"6140004306",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"2L2ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:73,nro:"6140004307",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"9M4ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:74,nro:"6140004388",elemento:"Impresora multifunción",marca:"HP",modelo:"M428",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:75,nro:"6140004393",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:76,nro:"6140004394",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
   {id:77,nro:"6140004395",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
   {id:78,nro:"6140004396",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
-  {id:79,nro:"6140004397",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:80,nro:"6140004398",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:81,nro:"6140004415",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:82,nro:"6140004416",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:83,nro:"6140004417",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:79,nro:"6140004397",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:80,nro:"6140004398",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:81,nro:"6140004415",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:82,nro:"6140004416",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:83,nro:"6140004417",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
   {id:84,nro:"6140004418",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:85,nro:"6140004419",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:86,nro:"6140004420",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:87,nro:"6140004460",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:88,nro:"6140004463",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:89,nro:"6140004464",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:90,nro:"6140004467",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:91,nro:"6140004477",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:92,nro:"6140004485",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:93,nro:"FUND.ARG.54",elemento:"Biblioteca alta",marca:"4 estantes",modelo:"",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
-  {id:94,nro:"FUND.ARG.222",elemento:"Teléfono",marca:"",modelo:"Panasonic KX-TG4011",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:85,nro:"6140004419",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:86,nro:"6140004420",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:87,nro:"6140004460",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:88,nro:"6140004463",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:89,nro:"6140004464",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:90,nro:"6140004467",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:91,nro:"6140004477",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:92,nro:"6140004485",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:93,nro:"FUND.ARG.54",elemento:"Biblioteca alta",marca:"4 estantes",modelo:"",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:94,nro:"FUND.ARG.222",elemento:"Teléfono",marca:"",modelo:"Panasonic KX-TG4011",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
 ];
 
 // ──────────────────────────────────────────────────────
@@ -704,9 +711,7 @@ function initLogin() {
     `<div class="login-user-chip" onclick="selectUser('${u}')">${u}</div>`
   ).join('');
 
-  // Restore URL
-  sheetsUrl = localStorage.getItem('bp_sheets_url') || '';
-  document.getElementById('sheetsUrl').value = sheetsUrl;
+  // URL hardcoded — no restore needed
 }
 
 function selectUser(name) {
@@ -726,6 +731,7 @@ function doLogin() {
   document.getElementById('userNameLabel').textContent = name;
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   init();
+  testConnection();
 }
 
 function logout() {
@@ -739,23 +745,17 @@ function logout() {
 // ──────────────────────────────────────────────────────
 // SHEETS URL
 // ──────────────────────────────────────────────────────
-function saveSheetsUrl() {
-  sheetsUrl = document.getElementById('sheetsUrl').value.trim();
-  localStorage.setItem('bp_sheets_url', sheetsUrl);
-  setSyncStatus('idle');
-}
+function saveSheetsUrl() {}
 
 async function testConnection() {
-  if (!sheetsUrl) { showToast('Primero ingresá la URL del Apps Script', 'error'); return; }
   setSyncStatus('syncing');
   try {
     const r = await fetch(sheetsUrl + '?action=ping', {method:'GET'});
     const j = await r.json();
-    if (j.status === 'ok') { setSyncStatus('ok'); showToast('✓ Conexión exitosa con Google Sheets', 'success'); }
+    if (j.status === 'ok') { setSyncStatus('ok'); }
     else throw new Error();
   } catch {
     setSyncStatus('err');
-    showToast('✗ No se pudo conectar. Revisá la URL.', 'error');
   }
 }
 
@@ -803,7 +803,7 @@ function logEntry(tipo, descripcion, nro) {
 // INIT APP
 // ──────────────────────────────────────────────────────
 function init() {
-  const saved = localStorage.getItem('bp_data_v3');
+  const saved = localStorage.getItem('bp_data_v4');
   data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_DATA));
   data.forEach(b => { if (!b.log) b.log = []; });
   save();
@@ -812,7 +812,7 @@ function init() {
 }
 
 function save() {
-  localStorage.setItem('bp_data_v3', JSON.stringify(data));
+  localStorage.setItem('bp_data_v4', JSON.stringify(data));
 }
 
 // ──────────────────────────────────────────────────────
@@ -1304,6 +1304,118 @@ function showToast(msg, type='success') {
   clearTimeout(window._tt);
   window._tt=setTimeout(()=>{t.className='toast';t.style.display='none';},3000);
 }
+
+
+// ──────────────────────────────────────────────────────
+// ZOOM & PAN ENGINE
+// ──────────────────────────────────────────────────────
+let _scale = 1, _tx = 0, _ty = 0;
+let _dragging = false, _lastX = 0, _lastY = 0;
+let _pinchDist0 = 0, _scale0 = 1;
+const MIN_SCALE = 0.5, MAX_SCALE = 4;
+
+function _applyTransform() {
+  const fp = document.getElementById('floorPlan');
+  if (fp) fp.style.transform = `translate(${_tx}px,${_ty}px) scale(${_scale})`;
+}
+
+function zoomFloor(factor, cx, cy) {
+  const wrap = document.getElementById('floorWrap');
+  if (!wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  const ox = cx !== undefined ? cx - rect.left : rect.width / 2;
+  const oy = cy !== undefined ? cy - rect.top  : rect.height / 2;
+  const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _scale * factor));
+  const sf = newScale / _scale;
+  _tx = ox - sf * (ox - _tx);
+  _ty = oy - sf * (oy - _ty);
+  _scale = newScale;
+  _applyTransform();
+}
+
+function resetZoom() {
+  _scale = 1; _tx = 8; _ty = 8;
+  _applyTransform();
+}
+
+function _initZoom() {
+  const wrap = document.getElementById('floorWrap');
+  if (!wrap || wrap._zoomInit) return;
+  wrap._zoomInit = true;
+
+  // Wheel zoom
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.12 : 0.9;
+    zoomFloor(factor, e.clientX, e.clientY);
+  }, { passive: false });
+
+  // Mouse drag pan
+  wrap.addEventListener('mousedown', e => {
+    if (e.target.closest('g[cursor="pointer"],g[style*="pointer"]')) return;
+    _dragging = true; _lastX = e.clientX; _lastY = e.clientY;
+    wrap.classList.add('panning');
+  });
+  window.addEventListener('mousemove', e => {
+    if (!_dragging) return;
+    _tx += e.clientX - _lastX; _ty += e.clientY - _lastY;
+    _lastX = e.clientX; _lastY = e.clientY;
+    _applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    _dragging = false;
+    document.getElementById('floorWrap')?.classList.remove('panning');
+  });
+
+  // Touch: pinch to zoom + single-finger pan
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      _pinchDist0 = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      _scale0 = _scale;
+    } else if (e.touches.length === 1) {
+      _dragging = true;
+      _lastX = e.touches[0].clientX; _lastY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _scale0 * (dist / _pinchDist0)));
+      const sf = newScale / _scale;
+      const rect = wrap.getBoundingClientRect();
+      const ox = cx - rect.left, oy = cy - rect.top;
+      _tx = ox - sf * (ox - _tx); _ty = oy - sf * (oy - _ty);
+      _scale = newScale;
+      _applyTransform();
+    } else if (e.touches.length === 1 && _dragging) {
+      _tx += e.touches[0].clientX - _lastX;
+      _ty += e.touches[0].clientY - _lastY;
+      _lastX = e.touches[0].clientX; _lastY = e.touches[0].clientY;
+      _applyTransform();
+    }
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', () => { _dragging = false; });
+}
+
+// Call after every renderFloor
+const _origRenderFloor = renderFloor;
+renderFloor = function() {
+  _origRenderFloor();
+  _initZoom();
+  // On first render reset zoom nicely
+  if (_scale === 1 && _tx === 0) { _tx = 8; _ty = 8; _applyTransform(); }
+};
 
 // ──────────────────────────────────────────────────────
 // START
