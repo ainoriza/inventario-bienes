@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bienes Patrimoniales — VARIEDADES</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f3e;
+    --accent: #4f7cff;
+    --accent2: #00d4aa;
+    --warn: #ff6b35;
+    --ok: #2ecc71;
+    --text: #e8eaf0;
+    --muted: #6b7591;
+    --castelar: #7c5cfc;
+    --belgrano: #4f7cff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    position:fixed; inset:0; background:var(--bg); z-index:999;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .login-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:2.5rem 2rem; width:360px; text-align:center;
+    box-shadow:0 32px 80px rgba(0,0,0,.6);
+  }
+  .login-card h1 { font-size:1.3rem; font-weight:800; letter-spacing:.06em; margin-bottom:.3rem; }
+  .login-card p { font-size:.8rem; color:var(--muted); margin-bottom:2rem; line-height:1.6; }
+  .login-card input {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; padding:.75rem 1rem; color:var(--text);
+    font-family:'Syne',sans-serif; font-size:.95rem; text-align:center;
+    transition:border-color .2s; margin-bottom:1rem;
+  }
+  .login-card input:focus { outline:none; border-color:var(--accent); }
+  .login-card input::placeholder { color:var(--muted); }
+  .login-card button {
+    width:100%; background:var(--accent); border:none; border-radius:8px;
+    padding:.75rem; color:#fff; font-family:'Syne',sans-serif;
+    font-size:.9rem; font-weight:700; letter-spacing:.06em; cursor:pointer;
+    transition:all .2s; text-transform:uppercase;
+  }
+  .login-card button:hover { background:#6b8fff; transform:translateY(-1px); }
+  .login-users { display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-top:1.25rem; }
+  .login-user-chip {
+    background:var(--surface2); border:1px solid var(--border); border-radius:20px;
+    padding:.3rem .8rem; font-size:.75rem; cursor:pointer; transition:all .15s;
+  }
+  .login-user-chip:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ── HEADER ── */
+  header {
+    position:sticky; top:0; z-index:100;
+    background:rgba(13,15,20,.97); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:0 1.5rem; display:flex; align-items:center;
+    justify-content:space-between; height:60px; gap:1rem;
+  }
+  .logo { font-size:.9rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); white-space:nowrap; }
+  .logo span { color:var(--text); }
+  .header-center { display:flex; align-items:center; gap:.5rem; }
+  .sync-indicator {
+    display:flex; align-items:center; gap:.4rem;
+    font-size:.72rem; color:var(--muted); font-family:'JetBrains Mono',monospace;
+  }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition:background .3s; }
+  .sync-dot.syncing { background:#f39c12; animation:pulse .8s infinite; }
+  .sync-dot.ok { background:var(--ok); }
+  .sync-dot.err { background:var(--warn); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .user-badge {
+    background:var(--surface2); border:1px solid var(--border); border-radius:20px;
+    padding:.3rem .85rem; font-size:.75rem; font-weight:600; display:flex; align-items:center; gap:.4rem;
+  }
+  .user-avatar {
+    width:22px; height:22px; border-radius:50%; background:var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.65rem; font-weight:800; color:#fff;
+  }
+  .header-actions { display:flex; gap:.6rem; }
+  .btn {
+    font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700; letter-spacing:.08em;
+    padding:.45rem 1rem; border-radius:6px; border:none; cursor:pointer;
+    transition:all .2s; text-transform:uppercase; white-space:nowrap;
+  }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#6b8fff; }
+  .btn-outline { background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-sm { padding:.32rem .7rem; font-size:.68rem; }
+  .btn-danger { background:rgba(255,107,53,.15); color:var(--warn); border:1px solid rgba(255,107,53,.3); }
+  .btn-danger:hover { background:rgba(255,107,53,.25); }
+
+  /* ── MAIN LAYOUT ── */
+  .main { display:grid; grid-template-columns:1fr 390px; min-height:calc(100vh - 60px); }
+
+  /* ── LEFT PANEL ── */
+  .left-panel { padding:1.5rem; border-right:1px solid var(--border); overflow-y:auto; }
+  .stats-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:.75rem; margin-bottom:1.5rem; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:.9rem 1rem; position:relative; overflow:hidden;
+  }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card.c1::before{background:var(--accent)} .stat-card.c2::before{background:var(--ok)}
+  .stat-card.c3::before{background:var(--warn)} .stat-card.c4::before{background:var(--castelar)}
+  .stat-card.c5::before{background:var(--accent2)}
+  .stat-num { font-size:1.6rem; font-weight:800; line-height:1; }
+  .stat-label { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-top:.25rem; }
+
+  .tabs { display:flex; gap:.4rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .tab {
+    font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.08em;
+    padding:.4rem 1rem; border-radius:5px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; text-transform:uppercase;
+  }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .tab:hover:not(.active) { color:var(--text); border-color:var(--text); }
+
+  .filters { display:flex; gap:.6rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .search-wrap { position:relative; flex:1; min-width:200px; }
+  .search-wrap input {
+    width:100%; background:var(--surface); border:1px solid var(--border);
+    border-radius:7px; padding:.55rem 1rem .55rem 2.3rem;
+    color:var(--text); font-family:'Syne',sans-serif; font-size:.82rem; transition:border-color .2s;
+  }
+  .search-wrap input:focus { outline:none; border-color:var(--accent); }
+  .search-wrap svg { position:absolute; left:.7rem; top:50%; transform:translateY(-50%); color:var(--muted); }
+  select {
+    background:var(--surface); border:1px solid var(--border); border-radius:7px;
+    padding:.55rem .9rem; color:var(--text); font-family:'Syne',sans-serif; font-size:.82rem; cursor:pointer;
+  }
+  select:focus { outline:none; border-color:var(--accent); }
+
+  .table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; }
+  thead { background:var(--surface2); }
+  th {
+    padding:.65rem .9rem; text-align:left;
+    font-size:.65rem; font-weight:700; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  td { padding:.6rem .9rem; border-bottom:1px solid rgba(42,47,62,.5); font-size:.8rem; }
+  tr:last-child td { border-bottom:none; }
+  tr { transition:background .15s; cursor:pointer; }
+  tr:hover td { background:rgba(79,124,255,.07); }
+  tr.selected td { background:rgba(79,124,255,.12); }
+
+  .badge {
+    display:inline-block; padding:.18rem .5rem; border-radius:4px;
+    font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .badge-ok { background:rgba(46,204,113,.15); color:var(--ok); border:1px solid rgba(46,204,113,.3); }
+  .badge-warn { background:rgba(255,107,53,.15); color:var(--warn); border:1px solid rgba(255,107,53,.3); }
+  .badge-castelar { background:rgba(124,92,252,.15); color:var(--castelar); border:1px solid rgba(124,92,252,.3); }
+  .badge-belgrano { background:rgba(79,124,255,.15); color:var(--accent); border:1px solid rgba(79,124,255,.3); }
+  .badge-noub { background:rgba(107,117,145,.15); color:var(--muted); border:1px solid rgba(107,117,145,.3); }
+  .badge-faltante { background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); }
+  .nro-inv { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted); }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel { background:var(--surface); overflow-y:auto; display:flex; flex-direction:column; }
+  .no-selection {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:3rem 2rem; text-align:center; color:var(--muted);
+  }
+  .no-selection p { font-size:.82rem; line-height:1.7; }
+  #detailPanel { display:none; flex-direction:column; }
+
+  .detail-header {
+    padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+    display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem;
+  }
+  .detail-header h3 { font-size:.95rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; line-height:1.3; }
+  .detail-meta { font-size:.72rem; color:var(--muted); margin-top:.25rem; }
+
+  .detail-body { padding:1.25rem 1.5rem; flex:1; }
+  .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-bottom:.65rem; }
+  .detail-row { margin-bottom:.65rem; }
+  .detail-row label { font-size:.62rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); display:block; margin-bottom:.2rem; }
+  .detail-row .val { font-size:.85rem; font-weight:600; }
+  .detail-row .val.mono { font-family:'JetBrains Mono',monospace; font-size:.75rem; }
+  .detail-row input, .detail-row select, .detail-row textarea {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    border-radius:6px; padding:.48rem .75rem; color:var(--text);
+    font-family:'Syne',sans-serif; font-size:.8rem; transition:border-color .2s;
+  }
+  .detail-row input:focus, .detail-row select:focus, .detail-row textarea:focus {
+    outline:none; border-color:var(--accent);
+  }
+  .detail-row textarea { resize:vertical; min-height:56px; }
+
+  /* Registro de cambios */
+  .changelog { padding:1.25rem 1.5rem; border-top:1px solid var(--border); }
+  .changelog h4 { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:.75rem; }
+  .change-entry {
+    padding:.5rem .75rem; background:var(--surface2); border-radius:6px;
+    margin-bottom:.4rem; border-left:2px solid var(--border);
+  }
+  .change-entry.pos { border-left-color:var(--accent2); }
+  .change-entry.estado { border-left-color:var(--accent); }
+  .change-entry.obs { border-left-color:var(--castelar); }
+  .change-entry.faltante { border-left-color:#e74c3c; }
+  .change-entry.nuevo { border-left-color:var(--ok); }
+  .change-user { font-size:.7rem; font-weight:700; color:var(--text); }
+  .change-time { font-size:.65rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .change-desc { font-size:.72rem; color:var(--muted); margin-top:.15rem; }
+
+  /* ── FLOOR PLAN ── */
+  .floor-section { padding:1.25rem 1.5rem; border-top:1px solid var(--border); }
+  .floor-section h4 {
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted);
+    margin-bottom:.75rem; display:flex; align-items:center; gap:.4rem;
+  }
+  .floor-tabs { display:flex; gap:.4rem; margin-bottom:.75rem; }
+  .floor-tab {
+    font-family:'Syne',sans-serif; font-size:.68rem; font-weight:700; letter-spacing:.06em;
+    padding:.3rem .75rem; border-radius:5px; border:1px solid var(--border);
+    background:transparent; cursor:pointer; transition:all .2s; text-transform:uppercase;
+  }
+  .floor-tab.fb { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .floor-tab.fc { background:var(--castelar); border-color:var(--castelar); color:#fff; }
+  .floor-tab:hover:not(.fb):not(.fc) { border-color:var(--text); color:var(--text); }
+
+  .floor-legend { display:flex; gap:.75rem; flex-wrap:wrap; margin-bottom:.6rem; }
+  .legend-item { display:flex; align-items:center; gap:.3rem; font-size:.63rem; color:var(--muted); }
+  .legend-dot { width:9px; height:9px; border-radius:2px; }
+
+  .floor-grid-wrap {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:.75rem; overflow:auto;
+  }
+  #floorPlan { display:block; overflow-x:auto; }
+
+  .cell {
+    width:34px; height:34px; border-radius:4px; border:1px solid rgba(42,47,62,.8);
+    cursor:pointer; transition:all .15s; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.55rem; font-family:'JetBrains Mono',monospace; user-select:none;
+  }
+  .cell.empty { background:var(--surface2); }
+  .cell.empty:hover { border-color:var(--accent); background:rgba(79,124,255,.15); }
+  .cell.occ-b { background:rgba(79,124,255,.2); border-color:rgba(79,124,255,.5); }
+  .cell.occ-c { background:rgba(124,92,252,.2); border-color:rgba(124,92,252,.5); }
+  .cell.sel-b { background:var(--accent)!important; border-color:#fff!important; box-shadow:0 0 0 2px rgba(79,124,255,.4); }
+  .cell.sel-c { background:var(--castelar)!important; border-color:#fff!important; box-shadow:0 0 0 2px rgba(124,92,252,.4); }
+  .cell.wall { background:#13151c; border-color:#1e2230; cursor:default; }
+  .cell.door { background:rgba(0,212,170,.12); border-color:rgba(0,212,170,.4); cursor:default; font-size:.5rem; color:var(--accent2); }
+  .cell-count {
+    position:absolute; top:2px; right:2px;
+    border-radius:3px; font-size:.52rem; font-weight:700; padding:0 2px; line-height:1.4; color:#fff;
+  }
+  .cc-b { background:var(--accent); } .cc-c { background:var(--castelar); }
+  .row-label { color:var(--muted); font-size:.6rem; font-family:'JetBrains Mono',monospace; display:flex; align-items:center; justify-content:center; }
+  #selectedPos { margin-top:.6rem; font-size:.72rem; font-family:'JetBrains Mono',monospace; }
+
+  /* ── ACTION BUTTONS ── */
+  .action-bar {
+    padding:1.25rem 1.5rem; border-top:1px solid var(--border);
+    display:flex; flex-direction:column; gap:.5rem;
+  }
+  .action-row { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:200;
+    display:none; align-items:center; justify-content:center; padding:1rem;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:2rem; max-width:460px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.6);
+  }
+  .modal h3 { font-size:1rem; font-weight:800; margin-bottom:.4rem; }
+  .modal p { font-size:.8rem; color:var(--muted); margin-bottom:1.25rem; line-height:1.6; }
+  .modal-body { display:flex; flex-direction:column; gap:.5rem; }
+  .modal-body input, .modal-body select {
+    background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    padding:.55rem .85rem; color:var(--text); font-family:'Syne',sans-serif; font-size:.82rem;
+  }
+  .modal-body input:focus, .modal-body select:focus { outline:none; border-color:var(--accent); }
+  .modal-body .row2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+  .modal-actions { display:flex; gap:.6rem; justify-content:flex-end; margin-top:1.25rem; }
+
+  /* ── SHEETS CONFIG PANEL ── */
+  .config-bar {
+    padding:.75rem 1.5rem; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; background:var(--surface2);
+  }
+  .config-bar label { font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .config-bar input {
+    flex:1; min-width:200px; background:var(--bg); border:1px solid var(--border);
+    border-radius:6px; padding:.4rem .75rem; color:var(--text);
+    font-family:'JetBrains Mono',monospace; font-size:.72rem;
+  }
+  .config-bar input:focus { outline:none; border-color:var(--accent); }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; bottom:1.5rem; right:1.5rem; z-index:300;
+    background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    padding:.75rem 1.1rem; font-size:.8rem; font-weight:600;
+    display:none; align-items:center; gap:.5rem;
+    animation:slideUp .2s ease;
+  }
+  .toast.show { display:flex; }
+  .toast.success { border-left:3px solid var(--ok); }
+  .toast.error { border-left:3px solid var(--warn); }
+  .toast.syncing { border-left:3px solid #f39c12; }
+  @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+  .empty-state { text-align:center; padding:2.5rem; color:var(--muted); font-size:.82rem; }
+
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  @media(max-width:900px) {
+    .main { grid-template-columns:1fr; }
+    .stats-bar { grid-template-columns:repeat(3,1fr); }
+    #detailPanel, .no-selection { display:none!important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:2rem;margin-bottom:.5rem">🏛️</div>
+    <h1>Bienes <span style="color:var(--accent)">Patrimoniales</span></h1>
+    <p>Sistema de control y seguimiento<br>VARIEDADES — Área Patrimonial</p>
+    <input type="text" id="loginInput" placeholder="Ingresá tu nombre…" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Ingresar al sistema</button>
+    <div style="font-size:.7rem;color:var(--muted);margin-top:1rem;margin-bottom:.5rem">o seleccioná un usuario frecuente</div>
+    <div class="login-users" id="recentUsers"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">Bienes<span>Patrimoniales</span></div>
+  <div class="header-center">
+    <div class="sync-indicator">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Sin conectar</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem">
+    <div class="user-badge">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userNameLabel">—</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()">↓ CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Nuevo</button>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Salir</button>
+    </div>
+  </div>
+</header>
+
+<!-- Sheets URL config bar -->
+<div class="config-bar" id="configBar">
+  <label>Apps Script URL:</label>
+  <input type="text" id="sheetsUrl" placeholder="Pegá aquí la URL de tu Web App de Google Apps Script…" oninput="saveSheetsUrl()">
+  <button class="btn btn-outline btn-sm" onclick="testConnection()">Probar conexión</button>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     MAIN
+════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('todos',this)">Todos</button>
+      <button class="tab" onclick="switchTab('belgrano',this)">Belgrano 450</button>
+      <button class="tab" onclick="switchTab('castelar',this)">Castelar</button>
+      <button class="tab" onclick="switchTab('no_verifica',this)">No verificados</button>
+      <button class="tab" onclick="switchTab('faltante',this)">Faltantes</button>
+    </div>
+
+    <div class="filters">
+      <div class="search-wrap">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar elemento, marca, Nro. Inventario…" oninput="renderTable()">
+      </div>
+      <select id="filterUb" onchange="renderTable()">
+        <option value="">Todas las sedes</option>
+        <option value="BELGRANO">Av. Belgrano 450</option>
+        <option value="CASTELAR">Castelar</option>
+        <option value="SIN">Sin ubicación</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Nro. Inventario</th><th>Elemento</th>
+            <th>Marca/Modelo</th><th>Estado</th><th>Sede</th><th>Posición</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">No se encontraron bienes.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel" id="rightPanel">
+    <div class="no-selection" id="noSelection">
+      <svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" style="opacity:.15;margin-bottom:1rem"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <p>Seleccioná un bien<br>para ver el detalle<br>y asignar su posición.</p>
+    </div>
+
+    <div id="detailPanel">
+      <!-- Detail header -->
+      <div class="detail-header">
+        <div style="flex:1;min-width:0">
+          <h3 id="dTitle">—</h3>
+          <div class="detail-meta" id="dMeta">—</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="closeDetail()">✕</button>
+      </div>
+
+      <!-- Detail body -->
+      <div class="detail-body">
+        <div class="field-grid">
+          <div class="detail-row"><label>Nro. Inventario</label><div class="val mono" id="dNro">—</div></div>
+          <div class="detail-row"><label>Estado</label><div id="dEstadoBadge">—</div></div>
+        </div>
+        <div class="field-grid">
+          <div class="detail-row"><label>Marca</label><div class="val" id="dMarca">—</div></div>
+          <div class="detail-row"><label>Modelo</label><div class="val" id="dModelo">—</div></div>
+        </div>
+        <div class="detail-row"><label>Serie</label><div class="val mono" id="dSerie">—</div></div>
+        <div class="field-grid">
+          <div class="detail-row"><label>Área</label><div class="val" id="dArea">—</div></div>
+          <div class="detail-row"><label>Responsable</label><div class="val" id="dResp">—</div></div>
+        </div>
+        <div class="detail-row"><label>Sede</label><div id="dUb">—</div></div>
+
+        <!-- Estado selector -->
+        <div class="detail-row" style="margin-top:.75rem">
+          <label>Cambiar estado</label>
+          <select id="dEstadoSelect" onchange="cambiarEstado(this.value)">
+            <option value="CONSTATADO">✓ Constatado</option>
+            <option value="NO SE VERIFICA LA EXISTENCIA DEL BIEN">✗ No verificado</option>
+            <option value="FALTANTE">⚠ Faltante</option>
+          </select>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="detail-row">
+          <label>Observaciones</label>
+          <textarea id="dObs" placeholder="Agregar observaciones…" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:.25rem" onclick="guardarObs()">
+          💾 Guardar observaciones
+        </button>
+      </div>
+
+      <!-- Floor plan -->
+      <div class="floor-section">
+        <h4>📍 Posición en plano</h4>
+        <div class="floor-tabs">
+          <button class="floor-tab fb" id="ftB" onclick="setFloor('belgrano')">Belgrano 450</button>
+          <button class="floor-tab" id="ftC" onclick="setFloor('castelar')">Castelar</button>
+        </div>
+        <div class="floor-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(79,124,255,.35);border:1px solid var(--accent)"></div>Ocupado B.</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(124,92,252,.35);border:1px solid var(--castelar)"></div>Ocupado C.</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Seleccionado</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(0,212,170,.15);border:1px solid var(--accent2)"></div>Puerta</div>
+        </div>
+        <div class="floor-grid-wrap">
+          <div id="floorPlan"></div>
+        </div>
+        <div id="selectedPos" style="color:var(--muted)"></div>
+      </div>
+
+      <!-- Changelog -->
+      <div class="changelog">
+        <h4>🕐 Historial de cambios</h4>
+        <div id="changelogList"><div style="font-size:.75rem;color:var(--muted)">Sin cambios registrados.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ADD MODAL
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3>➕ Nuevo Bien Patrimonial</h3>
+    <p>Completá los datos del nuevo bien. Quedará registrado en Google Sheets.</p>
+    <div class="modal-body">
+      <div class="row2">
+        <input type="text" id="nNro" placeholder="Nro. Inventario *">
+        <input type="text" id="nElemento" placeholder="Elemento *">
+      </div>
+      <div class="row2">
+        <input type="text" id="nMarca" placeholder="Marca">
+        <input type="text" id="nModelo" placeholder="Modelo">
+      </div>
+      <input type="text" id="nSerie" placeholder="Número de serie">
+      <div class="row2">
+        <select id="nUb">
+          <option value="">Sede</option>
+          <option value="AV BELGRANO 450">Av. Belgrano 450</option>
+          <option value="CASTELAR">Castelar</option>
+        </select>
+        <select id="nEst">
+          <option value="CONSTATADO">Constatado</option>
+          <option value="NO SE VERIFICA LA EXISTENCIA DEL BIEN">No verificado</option>
+          <option value="FALTANTE">Faltante</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addBien()">Agregar bien</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────
+const KNOWN_USERS = ['Mariano Mangieri','Administración','Patrimonial','Auditoría'];
+let currentUser = null;
+let selectedId = null;
+let currentFloor = 'belgrano';
+let currentTab = 'todos';
+let data = [];
+let nextId = 200;
+let sheetsUrl = '';
+
+// ──────────────────────────────────────────────────────
+// FLOOR LAYOUTS — room-based
+// pos key: "roomId:RC"  e.g. "despacho2:B3"
+// ──────────────────────────────────────────────────────
+
+// Belgrano 450: Despacho4 (top-right) + Pasillo + Despacho2/Despacho/Despacho3 (bottom row)
+// Castelar: single Despacho
+
+const FLOOR_DEFS = {
+  belgrano: {
+    label: 'Av. Belgrano 450',
+    rooms: [
+      { id:'despacho4', name:'Despacho 4', cols:6, rows:4 },
+      { id:'despacho2', name:'Despacho 2', cols:6, rows:4 },
+      { id:'despacho',  name:'Despacho',   cols:5, rows:4 },
+      { id:'despacho3', name:'Despacho 3', cols:5, rows:4 },
+    ]
+  },
+  castelar: {
+    label: 'Castelar',
+    rooms: [
+      { id:'despacho_cast', name:'Despacho', cols:8, rows:5 },
+    ]
+  }
+};
+
+// Legacy label lookup
+const FLOORS = {
+  belgrano: { label:'Av. Belgrano 450' },
+  castelar: { label:'Castelar' }
+};
+
+// ──────────────────────────────────────────────────────
+// INITIAL DATA (94 bienes del Excel)
+// ──────────────────────────────────────────────────────
+const INITIAL_DATA = [
+  {id:1,nro:"3570009681",elemento:"Mesa ratona",marca:"",modelo:"c/vidrio",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:2,nro:"3570183771",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:3,nro:"3570183772",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:4,nro:"3570183940",elemento:"Sillón giratorio",marca:"",modelo:"con ruedas",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:5,nro:"3570184140",elemento:"Cafetera",marca:"Yelmo",modelo:"16001",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:6,nro:"6140000203",elemento:"Impresora",marca:"HP",modelo:"Laser Jet 1018",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:7,nro:"6140000264",elemento:"CPU",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:8,nro:"6140000491",elemento:"CPU",marca:"CDR",modelo:"Enterprise Argentina (PC-002)",serie:"29jjmac626",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:9,nro:"6140000543",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:10,nro:"6140000544",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:11,nro:"6140000545",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:12,nro:"6140000546",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:13,nro:"6140000547",elemento:"Estabilizador",marca:"Atomlux",modelo:"1000 VA",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:14,nro:"6140000618",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:15,nro:"6140000621",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:16,nro:"6140000628",elemento:"Puesto de trabajo simple",marca:"Tempo A",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:17,nro:"6140000692",elemento:"Fax",marca:"Panasonic",modelo:"KX FP 218 AG",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:18,nro:"6140000770",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800155",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:19,nro:"6140000775",elemento:"Impresora laser",marca:"Samsung",modelo:"ML-2851 ND",serie:"4f91bags800149",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:20,nro:"6140001049",elemento:"PC",marca:"Biswal",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:21,nro:"6140001174",elemento:"CPU",marca:"Omnidata",modelo:"2010",serie:"a3577",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:22,nro:"6140001193",elemento:"Monitor",marca:"Samsung",modelo:"Syncmaster 933",serie:"cm19h9fsa30893",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:23,nro:"6140001489",elemento:"GPS",marca:"Garmin",modelo:"Nuvi 205",serie:"1sb314608",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:24,nro:"6140001515",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2017",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:25,nro:"6140001517",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2019",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:26,nro:"6140001526",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2028",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:27,nro:"6140001544",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:28,nro:"6140001545",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2031",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:29,nro:"6140001546",elemento:"Puesto trabajo PC/Monitor",marca:"PC CX / Monitor Samsung",modelo:"Monitor B1930N",serie:"PC SIS-2032",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:30,nro:"6140001592",elemento:"Switch",marca:"3Com",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:31,nro:"6140002192",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:32,nro:"6140002230",elemento:"Switch",marca:"Encore",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:33,nro:"6140002298",elemento:"Switch",marca:"Noganet",modelo:"",serie:"10a0900644d02888",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:34,nro:"6140002317",elemento:"Silla",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:35,nro:"6140002594",elemento:"Microondas",marca:"Hitplus",modelo:"CN-201M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:36,nro:"6140002669",elemento:"Carrito",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:37,nro:"6140002923",elemento:"Impresora",marca:"KYOCERA",modelo:"FS-1035MFP",serie:"NW32Y01742",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:38,nro:"6140002934",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC414030",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:39,nro:"6140002938",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KXTG1311AG",serie:"3AAQC408323",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:40,nro:"6140002966",elemento:"PC + Monitor",marca:"CX",modelo:"SPL",serie:"400404405",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:41,nro:"6140002988",elemento:"PC + Monitor",marca:"CX",modelo:"SPL",serie:"400404414",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:42,nro:"6140003017",elemento:"Switch",marca:"TP Link",modelo:"TL-SF 1008D",serie:"13463806070",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:43,nro:"6140003076",elemento:"Procesador",marca:"AMD APU",modelo:"A4 3300",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:44,nro:"6140003077",elemento:"Procesador",marca:"AMD APU",modelo:"A4 3300",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:45,nro:"6140003079",elemento:"Motherboard",marca:"AsRock",modelo:"A55-VS M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:46,nro:"6140003080",elemento:"Motherboard",marca:"AsRock",modelo:"A55-VS M",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:47,nro:"6140003082",elemento:"Pulverizador eléctrico",marca:"",modelo:"",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:48,nro:"6140003085",elemento:"Módulo de memoria",marca:"Kingston",modelo:"2GB DDR3 1333Mhz",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:49,nro:"6140003086",elemento:"Módulo de memoria",marca:"Kingston",modelo:"2GB DDR3 1333Mhz",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:50,nro:"6140003382",elemento:"Impresora multifunción laser",marca:"Samsung",modelo:"SL-C460W",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:51,nro:"6140003444",elemento:"Teléfono inalámbrico",marca:"Panasonic",modelo:"KX-TG1311AGB",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:52,nro:"6140003566",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:53,nro:"6140003567",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:54,nro:"6140003568",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:55,nro:"6140003569",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:56,nro:"6140003570",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:57,nro:"6140003571",elemento:"PC + Monitor",marca:"Bangho",modelo:"Desktop Optima T4 15",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:58,nro:"6140003795",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:59,nro:"6140003796",elemento:"Notebook",marca:"HP",modelo:"ETAP22.0",serie:"PC-008",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:60,nro:"6140003805",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:61,nro:"6140003806",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:62,nro:"6140003807",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:63,nro:"6140003808",elemento:"Computadora",marca:"EXO",modelo:"Clever A2",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:64,nro:"6140003995",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"7RLC793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:65,nro:"6140004002",elemento:"Notebook",marca:"DELL",modelo:"250 G7 i5",serie:"GXK4793",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:66,nro:"6140004016",elemento:"Teléfono celular",marca:"Samsung",modelo:"Galaxy A52S",serie:"R5CR90NHRZF",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:67,nro:"6140004107",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 ME",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:68,nro:"6140004110",elemento:"Camioneta",marca:"Volkswagen",modelo:"Amarok Comfortline 4X2",serie:"AF 380 MD",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:69,nro:"6140004163",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:70,nro:"6140004171",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:71,nro:"6140004305",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"3Y3ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:72,nro:"6140004306",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"2L2ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:73,nro:"6140004307",elemento:"Notebook",marca:"DELL",modelo:"3540",serie:"9M4ZYW3",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:74,nro:"6140004388",elemento:"Impresora multifunción",marca:"HP",modelo:"M428",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:75,nro:"6140004393",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:76,nro:"6140004394",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"CASTELAR",pos:null,obs:"",log:[]},
+  {id:77,nro:"6140004395",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:78,nro:"6140004396",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"",pos:null,obs:"",log:[]},
+  {id:79,nro:"6140004397",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:80,nro:"6140004398",elemento:"Monitor",marca:"Lenovo",modelo:"D19-10",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:81,nro:"6140004415",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:82,nro:"6140004416",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:83,nro:"6140004417",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:84,nro:"6140004418",elemento:"PC",marca:"Lenovo",modelo:"ThinkCentre V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"NO SE VERIFICA LA EXISTENCIA DEL BIEN",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:85,nro:"6140004419",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:86,nro:"6140004420",elemento:"PC",marca:"Lenovo",modelo:"ThinkCenter V35S",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:87,nro:"6140004460",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:88,nro:"6140004463",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:89,nro:"6140004464",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:90,nro:"6140004467",elemento:"PC",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:91,nro:"6140004477",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:92,nro:"6140004485",elemento:"Monitor",marca:"Coradir",modelo:"Enterprise 1700",serie:"",area:"VARIEDADES",responsable:"MARIANO MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:93,nro:"FUND.ARG.54",elemento:"Biblioteca alta",marca:"4 estantes",modelo:"",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+  {id:94,nro:"FUND.ARG.222",elemento:"Teléfono",marca:"",modelo:"Panasonic KX-TG4011",serie:"",area:"VARIEDADES",responsable:"MANGIERI",estado:"CONSTATADO",ubicacion:"AV BELGRANO 450",pos:null,obs:"",log:[]},
+];
+
+// ──────────────────────────────────────────────────────
+// LOGIN
+// ──────────────────────────────────────────────────────
+function initLogin() {
+  const saved = localStorage.getItem('bp_users') || '[]';
+  const users = JSON.parse(saved);
+  const container = document.getElementById('recentUsers');
+  const all = [...new Set([...KNOWN_USERS, ...users])];
+  container.innerHTML = all.map(u =>
+    `<div class="login-user-chip" onclick="selectUser('${u}')">${u}</div>`
+  ).join('');
+
+  // Restore URL
+  sheetsUrl = localStorage.getItem('bp_sheets_url') || '';
+  document.getElementById('sheetsUrl').value = sheetsUrl;
+}
+
+function selectUser(name) {
+  document.getElementById('loginInput').value = name;
+  doLogin();
+}
+
+function doLogin() {
+  const name = document.getElementById('loginInput').value.trim();
+  if (!name) { document.getElementById('loginInput').focus(); return; }
+  currentUser = name;
+  // Save to recent users
+  const saved = JSON.parse(localStorage.getItem('bp_users') || '[]');
+  if (!saved.includes(name)) { saved.unshift(name); localStorage.setItem('bp_users', JSON.stringify(saved.slice(0,8))); }
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('userNameLabel').textContent = name;
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  init();
+}
+
+function logout() {
+  currentUser = null;
+  selectedId = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginInput').value = '';
+  setSyncStatus('idle');
+}
+
+// ──────────────────────────────────────────────────────
+// SHEETS URL
+// ──────────────────────────────────────────────────────
+function saveSheetsUrl() {
+  sheetsUrl = document.getElementById('sheetsUrl').value.trim();
+  localStorage.setItem('bp_sheets_url', sheetsUrl);
+  setSyncStatus('idle');
+}
+
+async function testConnection() {
+  if (!sheetsUrl) { showToast('Primero ingresá la URL del Apps Script', 'error'); return; }
+  setSyncStatus('syncing');
+  try {
+    const r = await fetch(sheetsUrl + '?action=ping', {method:'GET'});
+    const j = await r.json();
+    if (j.status === 'ok') { setSyncStatus('ok'); showToast('✓ Conexión exitosa con Google Sheets', 'success'); }
+    else throw new Error();
+  } catch {
+    setSyncStatus('err');
+    showToast('✗ No se pudo conectar. Revisá la URL.', 'error');
+  }
+}
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (s==='syncing'?' syncing':s==='ok'?' ok':s==='err'?' err':'');
+  lbl.textContent = s==='syncing'?'Sincronizando…':s==='ok'?'Sincronizado':s==='err'?'Error de conexión':'Sin conectar';
+}
+
+// ──────────────────────────────────────────────────────
+// SHEETS SYNC
+// ──────────────────────────────────────────────────────
+async function syncToSheets(payload) {
+  if (!sheetsUrl) return; // Silent if no URL configured
+  setSyncStatus('syncing');
+  try {
+    await fetch(sheetsUrl, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+    showToast('⚠ No se pudo sincronizar con Sheets', 'error');
+  }
+}
+
+function logEntry(tipo, descripcion, nro) {
+  const entry = {
+    timestamp: new Date().toLocaleString('es-AR'),
+    usuario: currentUser,
+    tipo,
+    nro_inventario: nro,
+    descripcion
+  };
+  // Sync log entry to Sheets
+  syncToSheets({ action:'log', entry });
+  return entry;
+}
+
+// ──────────────────────────────────────────────────────
+// INIT APP
+// ──────────────────────────────────────────────────────
+function init() {
+  const saved = localStorage.getItem('bp_data_v3');
+  data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_DATA));
+  data.forEach(b => { if (!b.log) b.log = []; });
+  save();
+  renderStats();
+  renderTable();
+}
+
+function save() {
+  localStorage.setItem('bp_data_v3', JSON.stringify(data));
+}
+
+// ──────────────────────────────────────────────────────
+// STATS
+// ──────────────────────────────────────────────────────
+function renderStats() {
+  const total = data.length;
+  const belg = data.filter(b => b.ubicacion && b.ubicacion.includes('BELGRANO')).length;
+  const cast = data.filter(b => b.ubicacion && b.ubicacion.toUpperCase().includes('CASTELAR')).length;
+  const noV = data.filter(b => b.estado.includes('NO SE VERIFICA')).length;
+  const falt = data.filter(b => b.estado === 'FALTANTE').length;
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card c1"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card c1"><div class="stat-num">${belg}</div><div class="stat-label">Belgrano 450</div></div>
+    <div class="stat-card c4"><div class="stat-num">${cast}</div><div class="stat-label">Castelar</div></div>
+    <div class="stat-card c3"><div class="stat-num">${noV}</div><div class="stat-label">No verif.</div></div>
+    <div class="stat-card c3"><div class="stat-num">${falt}</div><div class="stat-label">Faltantes</div></div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────
+// TABLE
+// ──────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderTable();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const fUb = document.getElementById('filterUb').value;
+  return data.filter(b => {
+    if (currentTab==='belgrano' && !b.ubicacion.includes('BELGRANO')) return false;
+    if (currentTab==='castelar' && !b.ubicacion.toUpperCase().includes('CASTELAR')) return false;
+    if (currentTab==='no_verifica' && !b.estado.includes('NO SE VERIFICA')) return false;
+    if (currentTab==='faltante' && b.estado!=='FALTANTE') return false;
+    if (q) { const h=`${b.elemento} ${b.marca} ${b.modelo} ${b.nro} ${b.serie}`.toLowerCase(); if(!h.includes(q)) return false; }
+    if (fUb==='BELGRANO' && !b.ubicacion.includes('BELGRANO')) return false;
+    if (fUb==='CASTELAR' && !b.ubicacion.toUpperCase().includes('CASTELAR')) return false;
+    if (fUb==='SIN' && b.ubicacion) return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map((b,i) => {
+    const ubBadge = b.ubicacion.includes('BELGRANO') ? `<span class="badge badge-belgrano">Belgrano</span>` :
+                    b.ubicacion.toUpperCase().includes('CASTELAR') ? `<span class="badge badge-castelar">Castelar</span>` :
+                    `<span class="badge badge-noub">—</span>`;
+    const estBadge = b.estado==='CONSTATADO' ? `<span class="badge badge-ok">OK</span>` :
+                     b.estado==='FALTANTE' ? `<span class="badge badge-faltante">⚠ Faltante</span>` :
+                     `<span class="badge badge-warn">✗</span>`;
+    const posBadge = b.pos ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent2)">${posLabel(b.pos)}</span>` : `<span style="color:var(--muted);font-size:.7rem">—</span>`;
+    return `<tr onclick="selectBien(${b.id})" class="${selectedId===b.id?'selected':''}">
+      <td style="color:var(--muted);font-size:.72rem">${i+1}</td>
+      <td><span class="nro-inv">${b.nro}</span></td>
+      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.elemento}</td>
+      <td style="color:var(--muted);font-size:.75rem">${[b.marca,b.modelo].filter(Boolean).join(' / ')||'—'}</td>
+      <td>${estBadge}</td><td>${ubBadge}</td><td>${posBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function posLabel(pos) {
+  if (!pos) return '—';
+  const [floor, rest] = pos.split('::');
+  if (!rest) return '—';
+  const colonIdx = rest.indexOf(':');
+  if (colonIdx < 0) return rest;
+  const roomId = rest.slice(0, colonIdx);
+  const cell = rest.slice(colonIdx + 1);
+  const fl = floor==='belgrano'?'B':'C';
+  const roomDef = FLOOR_DEFS[floor]?.rooms.find(r=>r.id===roomId);
+  const rShort = roomDef ? roomDef.name.replace('Despacho ','D') : roomId;
+  return `${fl}·${rShort} ${cell}`;
+}
+
+// ──────────────────────────────────────────────────────
+// SELECT BIEN
+// ──────────────────────────────────────────────────────
+function selectBien(id) {
+  selectedId = id;
+  const b = data.find(x=>x.id===id);
+  if (!b) return;
+  document.getElementById('noSelection').style.display='none';
+  document.getElementById('detailPanel').style.display='flex';
+
+  document.getElementById('dTitle').textContent = b.elemento;
+  document.getElementById('dMeta').textContent = `${b.area} · ${b.responsable}`;
+  document.getElementById('dNro').textContent = b.nro;
+  document.getElementById('dEstadoBadge').innerHTML = b.estado==='CONSTATADO' ?
+    `<span class="badge badge-ok">✓ Constatado</span>` : b.estado==='FALTANTE' ?
+    `<span class="badge badge-faltante">⚠ Faltante</span>` :
+    `<span class="badge badge-warn">✗ No verificado</span>`;
+  document.getElementById('dMarca').textContent = b.marca||'—';
+  document.getElementById('dModelo').textContent = b.modelo||'—';
+  document.getElementById('dSerie').textContent = b.serie||'—';
+  document.getElementById('dArea').textContent = b.area;
+  document.getElementById('dResp').textContent = b.responsable;
+  const ubTxt = b.ubicacion.includes('BELGRANO')?'Av. Belgrano 450':b.ubicacion.toUpperCase().includes('CASTELAR')?'Castelar':'Sin asignar';
+  document.getElementById('dUb').innerHTML = b.ubicacion.includes('BELGRANO') ?
+    `<span class="badge badge-belgrano">${ubTxt}</span>` : b.ubicacion.toUpperCase().includes('CASTELAR') ?
+    `<span class="badge badge-castelar">${ubTxt}</span>` : `<span class="badge badge-noub">${ubTxt}</span>`;
+  document.getElementById('dEstadoSelect').value = b.estado;
+  document.getElementById('dObs').value = b.obs||'';
+
+  renderChangelog(b);
+
+  if (b.ubicacion.toUpperCase().includes('CASTELAR')) setFloor('castelar');
+  else setFloor('belgrano');
+  renderTable();
+}
+
+function closeDetail() {
+  selectedId = null;
+  document.getElementById('noSelection').style.display='flex';
+  document.getElementById('detailPanel').style.display='none';
+  renderTable();
+}
+
+// ──────────────────────────────────────────────────────
+// ACCIONES CON SYNC
+// ──────────────────────────────────────────────────────
+function cambiarEstado(nuevoEstado) {
+  if (!selectedId) return;
+  const b = data.find(x=>x.id===selectedId);
+  if (!b || b.estado===nuevoEstado) return;
+  const anterior = b.estado;
+  b.estado = nuevoEstado;
+  const entry = logEntry('estado', `${anterior} → ${nuevoEstado}`, b.nro);
+  b.log.unshift(entry);
+  save();
+  renderStats();
+  renderTable();
+  selectBien(selectedId);
+
+  // Sync full bien + log
+  syncToSheets({
+    action: 'update',
+    bien: { nro:b.nro, elemento:b.elemento, estado:nuevoEstado, ubicacion:b.ubicacion, pos:b.pos||'', obs:b.obs||'' },
+    log: entry
+  });
+  showToast(`Estado actualizado: ${nuevoEstado==='CONSTATADO'?'✓ Constatado':nuevoEstado==='FALTANTE'?'⚠ Faltante':'✗ No verificado'}`, 'success');
+}
+
+function guardarObs() {
+  if (!selectedId) return;
+  const b = data.find(x=>x.id===selectedId);
+  if (!b) return;
+  const obs = document.getElementById('dObs').value.trim();
+  b.obs = obs;
+  const entry = logEntry('obs', obs ? `"${obs.substring(0,60)}${obs.length>60?'…':''}"` : '(borrado)', b.nro);
+  b.log.unshift(entry);
+  save();
+  renderChangelog(b);
+  syncToSheets({
+    action:'update',
+    bien:{nro:b.nro, elemento:b.elemento, estado:b.estado, ubicacion:b.ubicacion, pos:b.pos||'', obs},
+    log: entry
+  });
+  showToast('Observación guardada y sincronizada', 'success');
+}
+
+function setCellPos(key) {
+  // key format: "roomId:RC"  e.g. "despacho2:B3"
+  if (!selectedId) { showToast('Seleccioná un bien primero', 'error'); return; }
+  const b = data.find(x=>x.id===selectedId);
+  if (!b) return;
+
+  const newPos = `${currentFloor}::${key}`;
+  const colonIdx = key.indexOf(':');
+  const roomId = key.slice(0, colonIdx);
+  const cell = key.slice(colonIdx + 1);
+  const fd = FLOOR_DEFS[currentFloor];
+  const roomDef = fd?.rooms.find(r => r.id === roomId);
+  const humanPos = `${fd?.label||''} · ${roomDef?.name||roomId} — ${cell}`;
+
+  if (b.pos === newPos) {
+    b.pos = null;
+    const entry = logEntry('pos', 'Posición removida del plano', b.nro);
+    b.log.unshift(entry);
+    syncToSheets({action:'update', bien:{nro:b.nro,elemento:b.elemento,estado:b.estado,ubicacion:b.ubicacion,pos:'',obs:b.obs||''}, log:entry});
+    showToast('Posición removida', 'success');
+  } else {
+    b.pos = newPos;
+    const entry = logEntry('pos', humanPos, b.nro);
+    b.log.unshift(entry);
+    syncToSheets({action:'update', bien:{nro:b.nro,elemento:b.elemento,estado:b.estado,ubicacion:b.ubicacion,pos:newPos,obs:b.obs||''}, log:entry});
+    showToast(`📍 ${humanPos}`, 'success');
+  }
+  save();
+  renderFloor();
+  renderTable();
+  renderChangelog(b);
+}
+
+// ──────────────────────────────────────────────────────
+// ADD BIEN
+// ──────────────────────────────────────────────────────
+function openAddModal() { document.getElementById('addModal').classList.add('open'); }
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('open');
+  ['nNro','nElemento','nMarca','nModelo','nSerie'].forEach(id=>document.getElementById(id).value='');
+}
+function addBien() {
+  const nro=document.getElementById('nNro').value.trim();
+  const elem=document.getElementById('nElemento').value.trim();
+  if (!nro||!elem) { showToast('Nro. Inventario y Elemento son requeridos','error'); return; }
+  const nuevo = {
+    id:nextId++, nro, elemento:elem,
+    marca:document.getElementById('nMarca').value.trim(),
+    modelo:document.getElementById('nModelo').value.trim(),
+    serie:document.getElementById('nSerie').value.trim(),
+    area:'VARIEDADES', responsable:currentUser,
+    estado:document.getElementById('nEst').value,
+    ubicacion:document.getElementById('nUb').value,
+    pos:null, obs:'', log:[]
+  };
+  const entry = logEntry('nuevo', `Bien agregado por ${currentUser}`, nro);
+  nuevo.log.push(entry);
+  data.push(nuevo);
+  save();
+  renderStats(); renderTable();
+  syncToSheets({action:'nuevo', bien:{...nuevo, log:undefined}, log:entry});
+  closeAddModal();
+  showToast(`✓ "${elem}" agregado y sincronizado`, 'success');
+}
+
+// ──────────────────────────────────────────────────────
+// CHANGELOG
+// ──────────────────────────────────────────────────────
+function renderChangelog(b) {
+  const el = document.getElementById('changelogList');
+  if (!b.log || !b.log.length) { el.innerHTML=`<div style="font-size:.72rem;color:var(--muted)">Sin cambios registrados.</div>`; return; }
+  el.innerHTML = b.log.slice(0,10).map(e => `
+    <div class="change-entry ${e.tipo}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span class="change-user">👤 ${e.usuario}</span>
+        <span class="change-time">${e.timestamp}</span>
+      </div>
+      <div class="change-desc">${tipoIcon(e.tipo)} ${e.descripcion}</div>
+    </div>
+  `).join('');
+}
+function tipoIcon(t) {
+  return {pos:'📍',estado:'🔄',obs:'📝',nuevo:'✨',faltante:'⚠'}[t]||'•';
+}
+
+// ──────────────────────────────────────────────────────
+// FLOOR PLAN — room-based SVG renderer
+// pos key format: "floor::roomId:RC"  e.g. "belgrano::despacho2:B3"
+// ──────────────────────────────────────────────────────
+function setFloor(floor) {
+  currentFloor=floor;
+  document.getElementById('ftB').className='floor-tab'+(floor==='belgrano'?' fb':'');
+  document.getElementById('ftC').className='floor-tab'+(floor==='castelar'?' fc':'');
+  renderFloor();
+}
+
+function renderFloor() {
+  const wrap = document.getElementById('floorPlan');
+  if (!wrap) return;
+  const fd = FLOOR_DEFS[currentFloor];
+  if (!fd) return;
+
+  // Build occupied map: roomId:RC -> count
+  const occMap = {};
+  data.forEach(b => {
+    if (!b.pos) return;
+    const [fl, rest] = b.pos.split('::');
+    if (fl !== currentFloor || !rest) return;
+    occMap[rest] = (occMap[rest] || 0) + 1;
+  });
+
+  const selBien = selectedId ? data.find(x => x.id === selectedId) : null;
+  const selKey = selBien?.pos?.startsWith(currentFloor + '::')
+    ? selBien.pos.split('::')[1]  // "roomId:RC"
+    : null;
+
+  const isCast = currentFloor === 'castelar';
+  const C = 30, GAP = 3, PAD = 6, ROOM_GAP = 14;
+  const LABEL_H = 18;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ── Layout Belgrano: Despacho4 top-right, then pasillo, then 3 rooms bottom
+  // ── Layout Castelar: single room centered
+  let svgW, svgH, roomLayouts;
+
+  function roomW(r) { return r.cols * (C + GAP) - GAP + PAD * 2; }
+  function roomH(r) { return r.rows * (C + GAP) - GAP + PAD * 2 + LABEL_H; }
+
+  if (currentFloor === 'belgrano') {
+    const [d4, d2, d, d3] = fd.rooms;
+    const PASILLO_H = 28;
+    const bottomY = LABEL_H + roomH(d4) + ROOM_GAP + PASILLO_H + ROOM_GAP;
+    const topRowW = roomW(d4);
+    const totalW = roomW(d2) + ROOM_GAP + roomW(d) + ROOM_GAP + roomW(d3);
+    svgW = Math.max(topRowW, totalW) + 2;
+    svgH = bottomY + roomH(d2) + 4;
+
+    const topX = svgW - roomW(d4) - 1;
+    const pasilloY = LABEL_H + roomH(d4) + ROOM_GAP;
+    const bottomRowY = pasilloY + PASILLO_H + ROOM_GAP;
+
+    roomLayouts = [
+      { room: d4, x: topX,                                  y: LABEL_H, pasilloY: null },
+      { room: d2, x: 1,                                     y: bottomRowY },
+      { room: d,  x: 1 + roomW(d2) + ROOM_GAP,             y: bottomRowY },
+      { room: d3, x: 1 + roomW(d2) + ROOM_GAP + roomW(d) + ROOM_GAP, y: bottomRowY },
+    ];
+
+    // Store pasillo info for drawing
+    roomLayouts._pasillo = { x: 1, y: pasilloY, w: svgW - 2, h: PASILLO_H };
+
+  } else {
+    // Castelar — single room
+    const [dc] = fd.rooms;
+    svgW = roomW(dc) + 2;
+    svgH = LABEL_H + roomH(dc) + 4;
+    roomLayouts = [{ room: dc, x: 1, y: LABEL_H }];
+  }
+
+  // ── Build SVG
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.style.display = 'block';
+
+  const isDark = document.documentElement.classList.contains('dark') ||
+    matchMedia('(prefers-color-scheme: dark)').matches;
+  const COL_BG    = isDark ? '#0f111a' : '#f5f6fa';
+  const COL_CELL  = isDark ? '#1e2230' : '#ebebf0';
+  const COL_CBDR  = isDark ? '#2a2f3e' : '#c8cad6';
+  const COL_PAS   = isDark ? '#161820' : '#e2e3e8';
+  const COL_RBDR  = isDark ? '#2a2f3e' : '#b8bad0';
+  const COL_LBL   = isDark ? '#6b7591' : '#888aaa';
+  const COL_SEL   = isCast ? '#7c5cfc' : '#4f7cff';
+  const COL_OCC   = isCast ? 'rgba(124,92,252,.25)' : 'rgba(79,124,255,.22)';
+  const COL_OCCS  = isCast ? 'rgba(124,92,252,.6)' : 'rgba(79,124,255,.6)';
+  const COL_TXT   = isDark ? '#e8eaf0' : '#2a2f3e';
+
+  function mk(tag, attrs) {
+    const el = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+  function txt(content, attrs) {
+    const el = mk('text', attrs);
+    el.textContent = content;
+    return el;
+  }
+
+  // Pasillo (Belgrano only)
+  if (roomLayouts._pasillo) {
+    const p = roomLayouts._pasillo;
+    svg.appendChild(mk('rect', { x: p.x, y: p.y, width: p.w, height: p.h, rx: 5,
+      fill: COL_PAS, stroke: COL_RBDR, 'stroke-width': .6 }));
+    svg.appendChild(txt('Pasillo — zona de circulación', {
+      x: p.x + p.w / 2, y: p.y + p.h / 2,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      style: `font-size:9px;fill:${COL_LBL};font-family:var(--font-sans,sans-serif);letter-spacing:.06em`
+    }));
+  }
+
+  // Rooms
+  roomLayouts.forEach(({ room, x: rx, y: ry }) => {
+    const rw = roomW(room);
+    const rh_inner = room.rows * (C + GAP) - GAP + PAD * 2;
+
+    // Room background
+    svg.appendChild(mk('rect', {
+      x: rx, y: ry, width: rw, height: LABEL_H + rh_inner, rx: 6,
+      fill: COL_BG, stroke: COL_RBDR, 'stroke-width': .8
+    }));
+
+    // Room name label
+    svg.appendChild(txt(room.name, {
+      x: rx + rw / 2, y: ry + LABEL_H / 2 + 1,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      style: `font-size:9px;font-weight:500;fill:${COL_LBL};font-family:var(--font-sans,sans-serif)`
+    }));
+
+    // Cells
+    for (let r = 0; r < room.rows; r++) {
+      const rowLetter = String.fromCharCode(65 + r);
+      for (let c = 0; c < room.cols; c++) {
+        const cellKey = `${room.id}:${rowLetter}${c + 1}`;
+        const cx = rx + PAD + c * (C + GAP);
+        const cy = ry + LABEL_H + PAD + r * (C + GAP);
+        const occ = occMap[cellKey] || 0;
+        const isSel = cellKey === selKey;
+
+        const g = mk('g', { cursor: 'pointer', style: 'transition:opacity .12s' });
+
+        const fillColor = isSel ? COL_SEL : occ ? COL_OCC : COL_CELL;
+        const strokeColor = isSel ? COL_SEL : occ ? COL_OCCS : COL_CBDR;
+
+        const rect = mk('rect', {
+          x: cx, y: cy, width: C, height: C, rx: 3,
+          fill: fillColor, stroke: strokeColor, 'stroke-width': isSel ? 1 : .5
+        });
+        g.appendChild(rect);
+
+        // Cell label
+        const cellTxt = txt(`${rowLetter}${c+1}`, {
+          x: cx + C/2, y: cy + C/2,
+          'text-anchor': 'middle', 'dominant-baseline': 'central',
+          style: `font-size:7.5px;fill:${isSel ? '#fff' : occ ? COL_SEL : COL_CBDR};font-family:var(--font-mono,monospace);pointer-events:none`
+        });
+        g.appendChild(cellTxt);
+
+        // Occupied count badge
+        if (occ && !isSel) {
+          const badge = mk('rect', { x: cx + C - 10, y: cy + 1, width: 9, height: 9, rx: 2, fill: COL_SEL });
+          const badgeTxt = txt(occ, {
+            x: cx + C - 5.5, y: cy + 6,
+            'text-anchor': 'middle', 'dominant-baseline': 'central',
+            style: `font-size:6px;fill:#fff;font-family:var(--font-mono,monospace);pointer-events:none`
+          });
+          g.appendChild(badge);
+          g.appendChild(badgeTxt);
+        }
+
+        // Selected indicator
+        if (isSel) {
+          const dot = mk('circle', { cx: cx + C/2, cy: cy + C/2, r: 4, fill: '#fff', opacity: .9 });
+          g.appendChild(dot);
+        }
+
+        g.addEventListener('mouseenter', () => { if (!isSel) rect.setAttribute('opacity', '.75'); });
+        g.addEventListener('mouseleave', () => { rect.setAttribute('opacity', '1'); });
+        g.addEventListener('click', () => setCellPos(`${room.id}:${rowLetter}${c+1}`));
+        svg.appendChild(g);
+      }
+    }
+  });
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = '';
+  wrap.appendChild(svg);
+
+  // Position label below
+  const posEl = document.getElementById('selectedPos');
+  if (selBien?.pos?.startsWith(currentFloor + '::')) {
+    const rest = selBien.pos.split('::')[1];
+    const colonIdx = rest.indexOf(':');
+    const roomId = rest.slice(0, colonIdx);
+    const cell = rest.slice(colonIdx + 1);
+    const roomDef = fd.rooms.find(r => r.id === roomId);
+    const rName = roomDef ? roomDef.name : roomId;
+    posEl.textContent = `📍 ${fd.label} · ${rName} — ${cell}`;
+    posEl.style.color = 'var(--accent2)';
+  } else {
+    posEl.textContent = selectedId ? 'Hacé clic en una celda para asignar la posición' : '';
+    posEl.style.color = 'var(--muted)';
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// EXPORT
+// ──────────────────────────────────────────────────────
+function exportCSV() {
+  const h=['#','Nro.Inventario','Elemento','Marca','Modelo','Serie','Area','Responsable','Estado','Ubicacion','Posicion','Observaciones'];
+  const rows=data.map((b,i)=>[i+1,b.nro,b.elemento,b.marca,b.modelo,b.serie,b.area,b.responsable,b.estado,b.ubicacion,b.pos||'',b.obs||'']);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='bienes_patrimoniales.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV descargado','success');
+}
+
+// ──────────────────────────────────────────────────────
+// MODAL + TOAST
+// ──────────────────────────────────────────────────────
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('modal-overlay')) closeAddModal();
+});
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show ${type}`; t.style.display='flex';
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>{t.className='toast';t.style.display='none';},3000);
+}
+
+// ──────────────────────────────────────────────────────
+// START
+// ──────────────────────────────────────────────────────
+initLogin();
+</script>
+</body>
+</html>
